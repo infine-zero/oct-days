@@ -13,7 +13,9 @@ window.TRAVEL_SHARE={
       "people": [
         "kiwi"
       ],
-      "photos": [],
+      "photos": [
+        "68a86058b06d526c67e74a2c46fdee3e37b7ea70e15715f7cdf142765706ba4b.jpg"
+      ],
       "author": "kiwi"
     },
     {
@@ -73,7 +75,9 @@ window.TRAVEL_SHARE={
         "kiwi",
         "有机酸"
       ],
-      "photos": [],
+      "photos": [
+        "3add759a2adf704f445ad382e221f8e28bcd37c6a942f540c1ef46c9134d095f.jpg"
+      ],
       "author": "kiwi"
     }
   ],
