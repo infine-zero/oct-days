@@ -40,7 +40,7 @@ function entryCredits(entry) {
   const author = entry.author || "";
   const companions = entry.people.filter(name => name !== author);
   return [author ? "作者 " + author : "作者待补",
-          companions.length ? "同行人 " + companions.join("、") : "同行人待补"].join(" · ");
+          companions.length ? "同行人 " + companions.join("、") : ""].filter(Boolean).join(" · ");
 }
 function timeOrder(value) {
   const exact = value.match(/^(?:约|大约)?(\d{1,2}):(\d{2})/);
