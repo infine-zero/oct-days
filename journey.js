@@ -211,7 +211,7 @@
       timeText.textContent=[record.time||"时间待补",record.place||"地点待补"].join(" · ");
       filmTime.textContent=[record.day,record.time,record.place].filter(Boolean).join(" / ");
       filmTitle.textContent=record.event||"事件待补";
-      filmNote.textContent=[record.people?.join("、"),record.reflection].filter(Boolean).join("　·　");
+      filmNote.textContent=[record.credits,record.reflection].filter(Boolean).join("　·　");
       if(mode==="film") {
         const imageUrl=window.JournalPhotos?.url(record.photos?.[0]) || "";
         if(imageUrl!==(filmPhoto.getAttribute("src")||"")){

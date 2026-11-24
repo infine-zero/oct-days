@@ -36,6 +36,12 @@ function dayLabel(day) {
   if (day !== "第1天") return day;
   return !state.demo && state.tripStart ? state.tripStart.slice(5).replace("-", ".") : "10.01";
 }
+function entryCredits(entry) {
+  const author = entry.author || "";
+  const companions = entry.people.filter(name => name !== author);
+  return [author ? "作者 " + author : "作者待补",
+          companions.length ? "同行人 " + companions.join("、") : "同行人待补"].join(" · ");
+}
 function timeOrder(value) {
   const exact = value.match(/^(?:约|大约)?(\d{1,2}):(\d{2})/);
   if (exact) return Number(exact[1])*60+Number(exact[2]);
@@ -112,7 +118,7 @@ function render() {
   days.value = state.day;
   const samples = records
     .filter(item=>item.status==="confirmed" && (state.mode==="film" || item.place))
-    .map(item=>({...item,day:dayLabel(dayKey(item.day))}));
+    .map(item=>({...item,day:dayLabel(dayKey(item.day)),credits:entryCredits(item)}));
   journeyControl = window.JournalJourney.mount(byId("journey"), samples, {mode:state.mode, selectedId:state.selected, onSelect:selectRecord});
   paintList(records);
 }
@@ -138,7 +144,9 @@ function paintList(records) {
       list.querySelector(".is-selected .record-main")?.focus({preventScroll:true});
     });
     if (active) open.setAttribute("aria-current","step");
-    open.append(make("strong","",entry.event),make("span","metadata",[entry.time||"时间待补", entry.place, entry.people.join("、"), entry.photos?.length ? entry.photos.length+" 张照片" : "", entry.status==="confirmed"?"":statusNames[entry.status]].filter(Boolean).join(" · ")));
+    open.append(make("strong","",entry.event),
+      make("span","metadata",[entry.time||"时间待补", entry.place, entry.photos?.length ? entry.photos.length+" 张照片" : "", entry.status==="confirmed"?"":statusNames[entry.status]].filter(Boolean).join(" · ")),
+      make("span","metadata entry-credits",entryCredits(entry)));
     row.append(open);
     if (active && !state.demo && !shared) row.append(button("编辑","quiet",()=>editEntry(entry)));
     if (active) {
@@ -163,7 +171,8 @@ function paintAlbum(groups) {
   for (const [day,entries] of groups) for (const entry of entries) {
     if (!entry.photos?.length) continue;
     const card=make("article","group album-group");
-    card.append(make("p","metadata",[dayLabel(day),entry.time,entry.place].filter(Boolean).join(" · ")),make("h2","",entry.event),window.JournalPhotos.gallery({...entry,day:dayLabel(day)}));
+    card.append(make("p","metadata",[dayLabel(day),entry.time,entry.place].filter(Boolean).join(" · ")),make("h2","",entry.event),
+      make("p","metadata entry-credits",entryCredits(entry)),window.JournalPhotos.gallery({...entry,day:dayLabel(day)}));
     card.append(button("回到这条手记","quiet",()=>{state.page="trip";state.day=day;state.selected=entry.id;render();}));
     target.append(card);
   }
@@ -186,7 +195,8 @@ function paintIndex() {
     group.append(make("h2","",name));
     for (const entry of records) {
       const open=button("","group-link",()=>{state.page="trip";state.day=dayKey(entry.day);state.selected=entry.id;render();});
-      open.append(make("strong","",entry.event),make("span","metadata",dayLabel(dayKey(entry.day))+" · "+(entry.time||"时间待补")+" · "+statusNames[entry.status]));
+      open.append(make("strong","",entry.event),make("span","metadata",dayLabel(dayKey(entry.day))+" · "+(entry.time||"时间待补")+" · "+statusNames[entry.status]),
+        make("span","metadata entry-credits",entryCredits(entry)));
       group.append(open);
     }
     target.append(group);
@@ -194,7 +204,7 @@ function paintIndex() {
 }
 
 function blankDraft() {
-  return {day:"",time:"",people:[],place:"",event:"",status:"confirmed",source:"",reflection:""};
+  return {day:"",time:"",author:"",people:[],place:"",event:"",status:"confirmed",source:"",reflection:""};
 }
 function openCompose() {
   state.original = null;
@@ -252,7 +262,8 @@ function showReview() {
     const fields=make("div","fields");
     field(fields,"日期或第几天","day",entry,{placeholder:"第2天 / 2026-05-03"});
     field(fields,"日本当地时间","time",entry,{placeholder:"16:30 / 傍晚"});
-    field(fields,"人物（用顿号隔开）","people",entry,{placeholder:"我、阿岚"});
+    field(fields,"作者","author",entry);
+    field(fields,"同行人（用顿号隔开）","people",entry,{placeholder:"阿岚"});
     field(fields,"地点","place",entry,{placeholder:"海边"});
     field(fields,"发生了什么（必填）","event",entry,{wide:true,multiline:true});
     field(fields,"感悟或想补的一句","reflection",entry,{wide:true,multiline:true});
