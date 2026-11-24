@@ -85,7 +85,8 @@
     const scenery = el("canvas","jj-scenery"), cast = el("canvas","jj-cast");
     scenery.setAttribute("aria-hidden","true"); cast.setAttribute("aria-hidden","true");
     const markers = el("div","jj-marker-layer");
-    const meta = el("span","jj-map-meta",mode === "film" ? "风景插画" : "到访顺序示意");
+    const meta = el("span","jj-map-meta",mode === "film" ? "风景插画" : "");
+    meta.hidden = mode === "map";
     if (mode === "explore" && records.length) {
       stage.tabIndex=0;
       stage.setAttribute("aria-label","自由探索场景，点地面或用方向键移动，靠近地点即可读记忆");
@@ -96,6 +97,7 @@
     const caption = el("div","jj-film-caption");
     caption.hidden = mode !== "film" || !records.length;
     const filmTime = el("small"), filmTitle = el("h3"), filmNote = el("p");
+    const filmCompanions = el("small","entry-companions"), filmAuthor = el("small","entry-author");
     const filmPhoto = el("img","jj-film-photo");
     filmPhoto.alt="";filmPhoto.hidden=true;
     const viewPhotos = el("button","jj-film-open");
@@ -105,7 +107,7 @@
     viewPhotos.addEventListener("click",()=>{
       pause();sync();window.JournalPhotos?.open(records[current],0);
     });
-    caption.append(filmTime,filmTitle,filmNote);
+    caption.append(filmTime,filmTitle,filmCompanions,filmNote,filmAuthor);
     stage.append(scenery,filmPhoto,cast,markers,meta,empty,caption,viewPhotos);
     const footer = el("div","jj-footer");
     const play = el("button","jj-action","播放");
@@ -211,7 +213,12 @@
       timeText.textContent=[record.time||"时间待补",record.place||"地点待补"].join(" · ");
       filmTime.textContent=[record.day,record.time,record.place].filter(Boolean).join(" / ");
       filmTitle.textContent=record.event||"事件待补";
-      filmNote.textContent=[record.credits,record.reflection].filter(Boolean).join("　·　");
+      filmCompanions.textContent=record.companions||"";
+      filmCompanions.hidden=!filmCompanions.textContent;
+      filmNote.textContent=record.reflection||"";
+      filmNote.hidden=!filmNote.textContent;
+      filmAuthor.textContent=record.author||"";
+      filmAuthor.hidden=!filmAuthor.textContent;
       if(mode==="film") {
         const imageUrl=window.JournalPhotos?.url(record.photos?.[0]) || "";
         if(imageUrl!==(filmPhoto.getAttribute("src")||"")){

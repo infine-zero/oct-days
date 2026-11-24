@@ -36,11 +36,12 @@ function dayLabel(day) {
   if (day !== "第1天") return day;
   return !state.demo && state.tripStart ? state.tripStart.slice(5).replace("-", ".") : "10.01";
 }
-function entryCredits(entry) {
-  const author = entry.author || "";
-  const companions = entry.people.filter(name => name !== author);
-  return [author ? "作者 " + author : "作者待补",
-          companions.length ? "同行人 " + companions.join("、") : ""].filter(Boolean).join(" · ");
+function companionNames(entry) {
+  return entry.people.filter(name => name !== entry.author).join("、");
+}
+function appendCompanions(container, entry) {
+  const names = companionNames(entry);
+  if (names) container.append(make("span","metadata entry-companions",names));
 }
 function timeOrder(value) {
   const exact = value.match(/^(?:约|大约)?(\d{1,2}):(\d{2})/);
@@ -118,7 +119,7 @@ function render() {
   days.value = state.day;
   const samples = records
     .filter(item=>item.status==="confirmed" && (state.mode==="film" || item.place))
-    .map(item=>({...item,day:dayLabel(dayKey(item.day)),credits:entryCredits(item)}));
+    .map(item=>({...item,day:dayLabel(dayKey(item.day)),companions:companionNames(item)}));
   journeyControl = window.JournalJourney.mount(byId("journey"), samples, {mode:state.mode, selectedId:state.selected, onSelect:selectRecord});
   paintList(records);
 }
@@ -144,14 +145,15 @@ function paintList(records) {
       list.querySelector(".is-selected .record-main")?.focus({preventScroll:true});
     });
     if (active) open.setAttribute("aria-current","step");
-    open.append(make("strong","",entry.event),
-      make("span","metadata",[entry.time||"时间待补", entry.place, entry.photos?.length ? entry.photos.length+" 张照片" : "", entry.status==="confirmed"?"":statusNames[entry.status]].filter(Boolean).join(" · ")),
-      make("span","metadata entry-credits",entryCredits(entry)));
+    open.append(make("strong","",entry.event));
+    appendCompanions(open, entry);
+    open.append(make("span","metadata",[entry.time||"时间待补", entry.place, entry.photos?.length ? entry.photos.length+" 张照片" : "", entry.status==="confirmed"?"":statusNames[entry.status]].filter(Boolean).join(" · ")));
     row.append(open);
     if (active && !state.demo && !shared) row.append(button("编辑","quiet",()=>editEntry(entry)));
     if (active) {
       const detail = make("div","details");
       if (entry.reflection) detail.append(make("p","meta-break",entry.reflection));
+      if (entry.author) detail.append(make("p","metadata entry-author",entry.author));
       if (entry.status!=="confirmed") detail.append(make("p","state","这条"+statusNames[entry.status]+"手记暂未加入经历回放。"));
       if (entry.source && !state.demo && !shared) {
         const source=make("details","source");
@@ -171,8 +173,9 @@ function paintAlbum(groups) {
   for (const [day,entries] of groups) for (const entry of entries) {
     if (!entry.photos?.length) continue;
     const card=make("article","group album-group");
-    card.append(make("p","metadata",[dayLabel(day),entry.time,entry.place].filter(Boolean).join(" · ")),make("h2","",entry.event),
-      make("p","metadata entry-credits",entryCredits(entry)),window.JournalPhotos.gallery({...entry,day:dayLabel(day)}));
+    card.append(make("p","metadata",[dayLabel(day),entry.time,entry.place].filter(Boolean).join(" · ")),make("h2","",entry.event));
+    appendCompanions(card, entry);
+    card.append(window.JournalPhotos.gallery({...entry,day:dayLabel(day)}));
     card.append(button("回到这条手记","quiet",()=>{state.page="trip";state.day=day;state.selected=entry.id;render();}));
     target.append(card);
   }
@@ -195,8 +198,9 @@ function paintIndex() {
     group.append(make("h2","",name));
     for (const entry of records) {
       const open=button("","group-link",()=>{state.page="trip";state.day=dayKey(entry.day);state.selected=entry.id;render();});
-      open.append(make("strong","",entry.event),make("span","metadata",dayLabel(dayKey(entry.day))+" · "+(entry.time||"时间待补")+" · "+statusNames[entry.status]),
-        make("span","metadata entry-credits",entryCredits(entry)));
+      open.append(make("strong","",entry.event));
+      appendCompanions(open, entry);
+      open.append(make("span","metadata",dayLabel(dayKey(entry.day))+" · "+(entry.time||"时间待补")+" · "+statusNames[entry.status]));
       group.append(open);
     }
     target.append(group);
