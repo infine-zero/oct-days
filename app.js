@@ -36,11 +36,12 @@ function dayLabel(day) {
   if (day !== "第1天") return day;
   return !state.demo && state.tripStart ? state.tripStart.slice(5).replace("-", ".") : "10.01";
 }
-function companionNames(entry) {
-  return entry.people.filter(name => name !== entry.author).join("、");
+function partyNames(entry) {
+  if (!entry.people.some(name => name !== entry.author)) return "";
+  return [...new Set([entry.author, ...entry.people].filter(Boolean))].join("、");
 }
 function appendCompanions(container, entry) {
-  const names = companionNames(entry);
+  const names = partyNames(entry);
   if (names) container.append(make("span","metadata entry-companions",names));
 }
 function timeOrder(value) {
@@ -119,7 +120,7 @@ function render() {
   days.value = state.day;
   const samples = records
     .filter(item=>item.status==="confirmed" && (state.mode==="film" || item.place))
-    .map(item=>({...item,day:dayLabel(dayKey(item.day)),companions:companionNames(item)}));
+    .map(item=>({...item,day:dayLabel(dayKey(item.day)),companions:partyNames(item)}));
   journeyControl = window.JournalJourney.mount(byId("journey"), samples, {mode:state.mode, selectedId:state.selected, onSelect:selectRecord});
   paintList(records);
 }
