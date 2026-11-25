@@ -24,6 +24,9 @@ let openingEdit = false;
 let activeEdit = null;
 const collection = () => !shared && state.demo ? sampleEvents : state.events;
 const initialNote = "日期待补";
+const viewStateKey = "octDaysView";
+let dayDetail = false;
+let returning = false;
 function dayKey(value) {
   if (!value || value==="某天" || value===initialNote) return initialNote;
   if (!state.demo && state.tripStart && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -75,12 +78,93 @@ function activate(selector, key, value) {
     item.setAttribute("aria-pressed", String(active));
   });
 }
+function captureView() {
+  return {page:state.page, mode:state.mode, day:state.day, selected:state.selected, scrollY:window.scrollY};
+}
+function writeView(method, detail, hasSource, url = location.href) {
+  history[method]({...history.state, [viewStateKey]:{detail, hasSource, view:captureView()}}, "", url);
+}
+function detailURL(day) {
+  const url = new URL(location.href);
+  if (url.hash === "#某天" || /^#(?:day=|%E6%9F%90%E5%A4%A9$)/i.test(url.hash)) url.hash = "";
+  if (day) url.searchParams.set("day", day === initialNote ? "undated" : day);
+  else url.searchParams.delete("day");
+  return url;
+}
+function linkedDay() {
+  const url = new URL(location.href);
+  const fromHash = new URLSearchParams(url.hash.slice(1)).get("day");
+  const raw = url.searchParams.get("day") ?? fromHash ??
+    (["#某天", "#%e6%9f%90%e5%a4%a9"].includes(url.hash.toLowerCase()) ? initialNote : null);
+  if (raw === null) return null;
+  const value = raw === "undated" ? initialNote : dayKey(raw);
+  return groupDays().has(value) ? value : null;
+}
+function restoreView(route) {
+  returning = false;
+  const view = route?.view;
+  const direct = linkedDay();
+  dayDetail = direct !== null;
+  state.page = dayDetail ? "trip" : view?.page || "trip";
+  state.mode = view?.mode || "map";
+  state.day = direct ?? view?.day ?? "";
+  state.selected = !dayDetail || view?.day === direct ? view?.selected || "" : "";
+  render();
+  window.scrollTo(0, view?.scrollY || 0);
+}
+function rememberDetail(url = location.href) {
+  if (dayDetail) writeView("replaceState", true, history.state?.[viewStateKey]?.hasSource === true, url);
+}
+function openDayDetail(day, selected = "", reveal = false) {
+  const alreadyOpen = dayDetail;
+  if (!alreadyOpen) writeView("replaceState", false, false);
+  dayDetail = true;
+  state.page = "trip";
+  state.day = day;
+  state.selected = selected;
+  if (!alreadyOpen) writeView("pushState", true, true, detailURL(day));
+  render();
+  if (reveal) byId("event-list").scrollIntoView({block:"start"});
+  rememberDetail(detailURL(state.day));
+}
+function showPage(page) {
+  const leaving = dayDetail;
+  dayDetail = false;
+  state.page = page;
+  if (leaving) {
+    state.day = "";
+    state.selected = "";
+  }
+  render();
+  if (leaving) {
+    window.scrollTo(0, 0);
+    writeView("replaceState", false, false, detailURL(null));
+  }
+}
+function returnFromDay() {
+  if (returning) return;
+  if (history.state?.[viewStateKey]?.hasSource === true) {
+    returning = true;
+    history.back();
+  } else {
+    showPage("trip");
+  }
+}
+function openRecord(day, id) {
+  if (day === initialNote || dayDetail) return openDayDetail(day, id);
+  state.page = "trip";
+  state.day = day;
+  state.selected = id;
+  render();
+}
 function selectRecord(id) {
   state.selected = id;
   const event = collection().find(item=>item.id===id);
   if (event && state.page==="trip") paintList(groupDays().get(dayKey(event.day)) || []);
+  rememberDetail();
 }
 function selectDay(day) {
+  if (dayDetail || day === initialNote) return openDayDetail(day);
   state.day = day;
   state.selected = "";
   render();
@@ -116,7 +200,11 @@ function render() {
   byId("index-view").hidden = state.page==="trip";
   const undated = byId("undated-shortcut");
   undated.hidden = false;
-  undated.setAttribute("aria-pressed", String(state.page === "trip" && state.day === initialNote));
+  const kiwiLabel = dayDetail ? "返回" : "某天";
+  undated.setAttribute("aria-label", kiwiLabel);
+  undated.title = dayDetail ? "返回进入前的页面" : "查看某天";
+  undated.toggleAttribute("data-return", dayDetail);
+  undated.querySelector(".kiwi-label").textContent = kiwiLabel;
   journeyControl?.destroy();
   journeyControl = null;
   if (state.page==="album") {paintAlbum(groups);return;}
@@ -158,6 +246,7 @@ function paintList(records) {
       state.selected=entry.id;
       if (entry.status==="confirmed" && (entry.place || state.mode==="film")) journeyControl?.select(entry.id);
       paintList(records);
+      rememberDetail();
       list.querySelector(".is-selected .record-main")?.focus({preventScroll:true});
     });
     if (active) open.setAttribute("aria-current","step");
@@ -192,7 +281,7 @@ function paintAlbum(groups) {
     card.append(make("p","metadata",[dayLabel(day),entry.time,entry.place].filter(Boolean).join(" · ")),make("h2","",entry.event));
     appendCompanions(card, entry);
     card.append(window.JournalPhotos.gallery({...entry,day:dayLabel(day)}));
-    card.append(button("回到这条手记","quiet",()=>{state.page="trip";state.day=day;state.selected=entry.id;render();}));
+    card.append(button("回到这条手记","quiet",()=>openRecord(day, entry.id)));
     target.append(card);
   }
   if (!target.childElementCount) target.append(make("p","section-placeholder",shared?"这份分享手账没有附带照片。":"在“记一件事”或已有手记的“编辑”里添加照片，就能在这里翻看。"));
@@ -213,7 +302,7 @@ function paintIndex() {
     const group=make("article","group");
     group.append(make("h2","",name));
     for (const entry of records) {
-      const open=button("","group-link",()=>{state.page="trip";state.day=dayKey(entry.day);state.selected=entry.id;render();});
+      const open=button("","group-link",()=>openRecord(dayKey(entry.day), entry.id));
       open.append(make("strong","",entry.event));
       appendCompanions(open, entry);
       open.append(make("span","metadata",dayLabel(dayKey(entry.day))+" · "+(entry.time||"时间待补")+" · "+statusNames[entry.status]));
@@ -492,9 +581,9 @@ function startUI() {
       if (state.page === "trip") render();
     });
   }
-  byId("brand").addEventListener("click",e=>{e.preventDefault();state.page="trip";render()});
-  document.querySelectorAll("[data-page]").forEach(node=>node.addEventListener("click",()=>{state.page=node.dataset.page;render()}));
-  document.querySelectorAll("[data-mode]").forEach(node=>node.addEventListener("click",()=>{state.mode=node.dataset.mode;render()}));
+  byId("brand").addEventListener("click",e=>{e.preventDefault();showPage("trip")});
+  document.querySelectorAll("[data-page]").forEach(node=>node.addEventListener("click",()=>showPage(node.dataset.page)));
+  document.querySelectorAll("[data-mode]").forEach(node=>node.addEventListener("click",()=>{state.mode=node.dataset.mode;render();rememberDetail()}));
   byId("days").addEventListener("change",event=>selectDay(event.target.value));
   const undated = byId("undated-shortcut");
   const stopWalking = event => {
@@ -503,11 +592,13 @@ function startUI() {
   undated.addEventListener("animationend", stopWalking);
   undated.addEventListener("animationcancel", stopWalking);
   undated.addEventListener("click",()=>{
+    if (dayDetail) return returnFromDay();
     if (!matchMedia("(prefers-reduced-motion: reduce)").matches) undated.classList.add("is-walking");
-    state.page = "trip";
-    selectDay(initialNote);
-    byId("event-list").scrollIntoView({block:"start"});
+    openDayDetail(initialNote, "", true);
   });
+  history.scrollRestoration = "manual";
+  window.addEventListener("popstate", event => restoreView(event.state?.[viewStateKey]));
+  window.addEventListener("pagehide", () => rememberDetail());
   if (shared) return;
   byId("entry-dialog").addEventListener("close",finishEdit);
   window.addEventListener("pagehide",()=>{if(activeEdit) releaseEdit(activeEdit)});
@@ -574,14 +665,14 @@ async function init() {
     if (shared) {
       applyData(shared);
       state.demo=!!shared.demo;
-      startUI();render();return;
+      startUI();restoreView(history.state?.[viewStateKey]);return;
     }
     const [journal,sample]=await Promise.all([api("/api/journal"),api("./sample.json")]);
     sampleEvents=sample.events;
     window.JOURNAL_DEMO_KEYS=new Set(sampleEvents.flatMap(record=>record.photos||[]));
     applyData(journal);
     state.demo=state.events.length===0;
-    startUI();render();
+    startUI();restoreView(history.state?.[viewStateKey]);
     window.addEventListener("focus",refresh);
     document.addEventListener("visibilitychange",()=>{if (!document.hidden) refresh()});
     setInterval(refresh,15000);
