@@ -59,6 +59,7 @@ function groupDays() {
     groups.get(key).push(event);
   }
   if (!groups.size) groups.set("第1天", []);
+  if (!groups.has(initialNote)) groups.set(initialNote, []);
   for (const events of groups.values()) events.sort((a,b)=>timeOrder(a.time)-timeOrder(b.time));
   const order = (a,b) => a === initialNote ? 1 : b === initialNote ? -1 : a.localeCompare(b,"zh",{numeric:true});
   return new Map([...groups].sort(([a],[b])=>order(a,b)));
@@ -114,7 +115,7 @@ function render() {
   byId("trip-view").hidden = state.page!=="trip";
   byId("index-view").hidden = state.page==="trip";
   const undated = byId("undated-shortcut");
-  undated.hidden = !groups.has(initialNote);
+  undated.hidden = false;
   undated.setAttribute("aria-pressed", String(state.page === "trip" && state.day === initialNote));
   journeyControl?.destroy();
   journeyControl = null;
@@ -141,7 +142,8 @@ function paintList(records) {
   const list = byId("event-list");
   list.replaceChildren();
   if (!records.length) {
-    list.append(make("p","section-placeholder","还没有手记。记下第一件事，这一天就有了起点。"));
+    list.append(make("p","section-placeholder",state.day===initialNote
+      ? "还没有未填日期的手记。" : "还没有手记。记下第一件事，这一天就有了起点。"));
     return;
   }
   for (const entry of records) {

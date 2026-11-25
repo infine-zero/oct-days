@@ -139,12 +139,12 @@ h1 {font-size: clamp(30px, 5vw, 40px); font-weight: 750; margin: 0 0 8px; text-w
 .undated-shortcut {
   position: fixed;
   z-index: 3;
-  inset-inline-end: max(16px, env(safe-area-inset-right));
-  inset-block-end: max(16px, env(safe-area-inset-bottom));
-  width: 54px;
-  height: 54px;
+  inset-inline-end: max(20px, env(safe-area-inset-right));
+  inset-block-end: max(32px, env(safe-area-inset-bottom));
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
-  background: rgb(235 239 240 / 22%);
+  background: rgb(235 239 240 / 30%);
   color: #f0f1f1;
   font-size: 13px;
 }
