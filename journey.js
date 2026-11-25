@@ -64,6 +64,97 @@
     ctx.restore();
   }
 
+  const AIRPORT = "oct01-airport", CITY_STOP = "oct01-yakitori";
+  const cityAnchors = {
+    [AIRPORT]: [.18, .72],
+    [CITY_STOP]: [.78, .41],
+  };
+  function cityscape(ctx, width, height, tones) {
+    const day = !!tones["map-paper"];
+    const colors = day
+      ? {water:"#e2eeea", land:"#f4f3eb", coast:"#a4b7ac", block:"#dde5d9", minor:"#fffdf7",
+        street:"#fffef9", major:"#c9cec0", apron:"#d0d9cc", dock:"#ccdcd2", label:"#536a63"}
+      : {water:"#192f37", land:"#293b3d", coast:"#4e6866", block:"#384d49", minor:"#506662",
+        street:"#58706a", major:"#69807a", apron:"#445a56", dock:"#314948", label:"#a8c4bc"};
+    ctx.save();
+    ctx.scale(width / 960, height / 330);
+    ctx.fillStyle = colors.water;
+    ctx.fillRect(0, 0, 960, 330);
+
+    const shore = [[462,-4],[454,48],[410,75],[432,100],[390,125],[411,154],
+      [382,177],[404,203],[369,230],[388,254],[371,287],[390,334]];
+    const mainland = [...shore,[964,334],[964,-4]];
+    polygon(ctx, mainland, colors.land);
+    ctx.save();
+    ctx.clip(); // The street grid is confined to the mainland.
+    for (let row=0; row<6; row++) {
+      for (let col=0; col<9; col++) {
+        const x=415+col*63+row*3, y=row*57-10+((col%3)-1)*4;
+        polygon(ctx, [[x,y],[x+44,y-2],[x+47,y+35],[x+3,y+38]], colors.block);
+      }
+    }
+    for (let x=442; x<1040; x+=63) {
+      pen(ctx, [[x,-6],[x+11,83],[x+18,164],[x+30,338]], colors.street, 4);
+    }
+    for (let y=22; y<345; y+=44) {
+      pen(ctx, [[370,y+9],[591,y+3],[790,y-9],[966,y-17]], colors.minor, 3);
+    }
+    const avenue = [[389,211],[532,190],[671,177],[811,136],[967,111]];
+    pen(ctx, avenue, colors.major, 8);
+    pen(ctx, avenue, colors.street, 3);
+    const crossTown = [[715,-5],[711,79],[737,149],[769,231],[805,338]];
+    pen(ctx, crossTown, colors.major, 7);
+    pen(ctx, crossTown, colors.street, 2.5);
+    ctx.restore();
+
+    pen(ctx, shore, colors.coast, 2);
+    for (const [x,y] of [[418,85],[388,133],[390,186],[367,237]]) {
+      polygon(ctx, [[x,y],[x-27,y+4],[x-24,y+14],[x+5,y+11]], colors.dock, colors.coast);
+    }
+    const platform = [[73,234],[123,215],[194,202],[249,217],[278,242],[242,265],
+      [171,286],[103,273]];
+    polygon(ctx, platform, colors.land, colors.coast);
+    polygon(ctx, [[100,242],[192,214],[244,227],[253,240],[170,266],[109,257]], colors.apron);
+    pen(ctx, [[106,251],[218,220]], colors.coast, 2.5);
+    pen(ctx, [[143,263],[250,234]], colors.street, 2);
+    // Duplex bridge casing shares the illustrated transfer's crossing.
+    const bridge = [[253,238],[304,225],[404,203],[465,176]];
+    pen(ctx, bridge, colors.coast, 7);
+    pen(ctx, bridge, colors.street, 4);
+
+    for (const [x,y,w] of [[49,86,62],[202,139,59],[80,302,63],[294,282,42]]) {
+      pen(ctx, [[x,y],[x+w,y]], colors.coast, .65);
+      pen(ctx, [[x+10,y+7],[x+w+14,y+7]], colors.coast, .65);
+    }
+    ctx.restore();
+    ctx.fillStyle = colors.label;
+    ctx.font = "500 11px system-ui, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.fillText("离岸接驳示意", width*.07, height*.91);
+  }
+
+  function transferRoute(a, b, width, height) {
+    if (!((a.id===AIRPORT && b.id===CITY_STOP) || (a.id===CITY_STOP && b.id===AIRPORT))) return null;
+    const forward = a.id===AIRPORT;
+    const start = forward ? a : b, end = forward ? b : a;
+    const points = [[start.x,start.y], ...[[253,238],[304,225],[404,203],[465,176],
+      [571,164],[614,135],[681,135]].map(([x,y])=>[x*width/960,y*height/330]), [end.x,end.y]];
+    return forward ? points : points.reverse();
+  }
+  function pointAlong(points, progress) {
+    const lengths = points.slice(1).map(([x,y], i)=>Math.hypot(x-points[i][0],y-points[i][1]));
+    let distance = Math.max(0, Math.min(1, progress))*lengths.reduce((a,b)=>a+b,0);
+    for (let i=0; i<lengths.length; i++) {
+      if (distance <= lengths[i] || i===lengths.length-1) {
+        const fraction=lengths[i] ? distance/lengths[i] : 0;
+        return {x:points[i][0]+fraction*(points[i+1][0]-points[i][0]),
+          y:points[i][1]+fraction*(points[i+1][1]-points[i][1])};
+      }
+      distance-=lengths[i];
+    }
+    return {x:points[0][0],y:points[0][1]};
+  }
+
   function mount(container, entries, options = {}) {
     mounts.get(container)?.destroy();
     const theme = getComputedStyle(container);
@@ -76,6 +167,8 @@
     const lastStep = Math.max(0, records.length - 1);
     const nextDayStep = lastStep + 1;
     const mode = ["map","explore","film"].includes(options.mode) ? options.mode : "map";
+    const city = mode==="map" && records.some(record=>record.id===AIRPORT && record.day==="10.01") &&
+      records.some(record=>record.id===CITY_STOP && record.day==="10.01");
     const initial = records.findIndex(record => record.id === options.selectedId);
     let current = Math.max(0, initial);
     let playing = false, frame = 0, lastUpdate = 0, elapsed = 0, disposed = false;
@@ -83,13 +176,15 @@
     let width = 1, height = 1, pageStart = -1, visiblePoints = [];
     const reducedMotion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
     const root = el("section", "jj-journey jj-" + mode);
-    root.setAttribute("aria-label", {map:"旅程路线示意", explore:"沿地点探索", film:"记忆电影回放"}[mode]);
+    if (city) root.dataset.mapStyle = "city";
+    root.setAttribute("aria-label", city ? "10月1日 大阪都市圈路线示意图" : {map:"旅程路线示意", explore:"沿地点探索", film:"记忆电影回放"}[mode]);
     const stage = el("div","jj-stage");
     const scenery = el("canvas","jj-scenery"), cast = el("canvas","jj-cast");
+    if (city) scenery.style.opacity = ".91";
     scenery.setAttribute("aria-hidden","true"); cast.setAttribute("aria-hidden","true");
     const markers = el("div","jj-marker-layer");
-    const meta = el("span","jj-map-meta",mode === "film" ? "风景插画" : "");
-    meta.hidden = mode === "map";
+    const meta = el("span","jj-map-meta",city ? "大阪都市圈 · 示意" : mode === "film" ? "风景插画" : "");
+    meta.hidden = mode === "map" && !city;
     if (mode === "explore" && records.length) {
       stage.tabIndex=0;
       stage.setAttribute("aria-label","自由探索场景，点地面或用方向键移动，靠近地点即可读记忆");
@@ -146,9 +241,10 @@
       pageStart=start;
       const batch=records.slice(start,start+capacityNow);
       const ys=[.59,.39,.61,.40,.54];
-      visiblePoints=batch.map((_,i)=>{
+      visiblePoints=batch.map((record,i)=>{
+        const anchor = city && cityAnchors[record.id];
         const x=batch.length===1?.45:.13+i*.74/(batch.length-1);
-        return {x:x*width,y:ys[i]*height};
+        return {id:record.id,x:(anchor?.[0] ?? x)*width,y:(anchor?.[1] ?? ys[i])*height};
       });
       markers.replaceChildren();
       if (mode==="film") return;
@@ -192,11 +288,20 @@
       for(let i=1;i<visiblePoints.length;i++){
         const a=visiblePoints[i-1],b=visiblePoints[i];
         const portion=[[a.x+(b.x-a.x)/3,a.y,b.x-(b.x-a.x)/3,b.y,b.x,b.y]];
-        curve(actors,[a.x,a.y],portion,tones.route,2);
+        const transfer=city && transferRoute(a,b,width,height);
+        if (transfer) {
+          pen(actors,transfer,tones["map-paper"] || tones.mist,5);
+          pen(actors,transfer,tones.route,2.7);
+        } else {
+          curve(actors,[a.x,a.y],portion,tones.route,2);
+        }
       }
       const index=current-pageStart;
       const a=visiblePoints[index];if(!a) return;
-      const p=wander ? {x:wander.x*width,y:wander.y*height} : visiblePoints[index+1] ? placeBetween(a,visiblePoints[index+1],progress) : a;
+      const next=visiblePoints[index+1];
+      const transfer=next && city && transferRoute(a,next,width,height);
+      const p=wander ? {x:wander.x*width,y:wander.y*height} :
+        transfer ? pointAlong(transfer,progress) : next ? placeBetween(a,next,progress) : a;
       const count=mode==="explore"?1:Math.min(3,Math.max(1,records[current].people?.length || 0));
       const colors=[tones.warm, tones.accent, tones.island];
       for(let i=count-1;i>=0;i--){
@@ -241,7 +346,7 @@
       if(disposed)return;
       width=Math.max(1,stage.clientWidth);height=Math.max(1,stage.clientHeight);
       const bg=setup(scenery);actors=setup(cast);
-      landscape(bg,width,height,tones);sync(true);
+      (city ? cityscape : landscape)(bg,width,height,tones);sync(true);
     }
     function pause(){
       playing=false;elapsed=0;lastUpdate=0;cancelAnimationFrame(frame);frame=0;

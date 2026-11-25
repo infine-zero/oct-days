@@ -14,7 +14,7 @@ function button(label, className, onClick) {
   return element;
 }
 
-const shared = window.TRAVEL_SHARE;
+let shared = window.TRAVEL_SHARE;
 let sampleEvents = [];
 const statusNames = {confirmed:"确认经历", planned:"计划", pending:"待确认"};
 const state = {events:[], tripStart:"", demo:false, page:"trip", mode:"map", day:"", selected:"", drafts:[], original:null, loaded:false};
@@ -660,12 +660,76 @@ function syncJournal(data) {
   applyData(data);
   if (eventsChanged || startChanged) render();
 }
+function publicDataSources() {
+  const snapshot = byId("public-journal-snapshot");
+  if (!snapshot || location.origin !== snapshot.dataset.pagesOrigin) return null;
+  const url = new URL(snapshot.src);
+  const directory = new URL(".", url).pathname;
+  if (url.origin !== location.origin || ![directory, directory+"index.html"].includes(location.pathname)) return null;
+  return {pages:url, repository:new URL(snapshot.dataset.repositoryUrl)};
+}
+function isPublicSnapshot(data) {
+  const textFields = ["id","day","time","place","event","reflection","status"];
+  const strings = list => Array.isArray(list) && list.every(item=>typeof item==="string");
+  return data?.version===1 && Array.isArray(data.events) &&
+    data.events.every(entry=>entry && textFields.every(key=>typeof entry[key]==="string") &&
+      strings(entry.people) && strings(entry.photos));
+}
+async function requestPublicSnapshot(url, repository, ms) {
+  const requestUrl = new URL(url);
+  requestUrl.searchParams.set("open", Date.now()+"-"+Math.random().toString(36).slice(2));
+  const controller = new AbortController();
+  const limit = setTimeout(()=>controller.abort(), ms);
+  try {
+    const response = await fetch(requestUrl, {cache:"no-store", credentials:"omit", signal:controller.signal});
+    if (!response.ok) throw new Error("Public journal unavailable");
+    let text;
+    if (repository) {
+      const file = await response.json();
+      if (file.encoding!=="base64" || typeof file.content!=="string") throw new Error("Invalid repository file");
+      text = new TextDecoder().decode(Uint8Array.from(atob(file.content), c=>c.charCodeAt(0)));
+    } else {
+      text = await response.text();
+    }
+    const match = text.match(/^\s*window\.TRAVEL_SHARE\s*=\s*(\{[\s\S]*\})\s*;\s*$/);
+    const data = match && JSON.parse(match[1]);
+    if (!isPublicSnapshot(data)) throw new Error("Invalid public journal");
+    return data;
+  } finally {
+    clearTimeout(limit);
+  }
+}
+async function loadPublicSnapshot({pages, repository}, fallback) {
+  const key = "oct-days-public-snapshot:"+pages.pathname;
+  try {
+    // Pages can reuse a CDN response regardless of its query string.
+    const data = await requestPublicSnapshot(repository, true, 3500);
+    try { sessionStorage.setItem(key, JSON.stringify(data)); } catch {}
+    return {data, fresh:true};
+  } catch {
+    let previous, published;
+    try { previous = JSON.parse(sessionStorage.getItem(key)); } catch {}
+    if (!isPublicSnapshot(previous)) {
+      pages.search = "";
+      try { published = await requestPublicSnapshot(pages, false, 2500); } catch {}
+    }
+    const data = [previous, published, fallback].find(isPublicSnapshot);
+    return {data:data || {version:1, tripStart:"", events:[]}, fresh:false, hasSnapshot:!!data};
+  }
+}
 async function init() {
   try {
+    const sources = publicDataSources();
+    const update = sources ? await loadPublicSnapshot(sources, shared) : null;
+    if (update) shared = update.data;
     if (shared) {
       applyData(shared);
       state.demo=!!shared.demo;
-      startUI();restoreView(history.state?.[viewStateKey]);return;
+      startUI();restoreView(history.state?.[viewStateKey]);
+      if (update && !update.fresh) notice(update.hasSnapshot
+        ? "暂时无法检查最新手记，正在显示已有内容。"
+        : "暂时无法加载手记，请联网后刷新。");
+      return;
     }
     const [journal,sample]=await Promise.all([api("/api/journal"),api("./sample.json")]);
     sampleEvents=sample.events;
