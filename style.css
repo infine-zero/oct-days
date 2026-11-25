@@ -273,7 +273,12 @@ body::after {
     linear-gradient(180deg, #111a2082, #101b2061 45%, #0a1619a8 72%, #0a1418d8);
   background-blend-mode: soft-light, normal;
 }
-.bar {background: #0c171c9e; border-color: var(--line)}
+/* Keep the navigation on the same backdrop in both themes. */
+.bar {
+  background: transparent;
+  box-shadow: none;
+  border-bottom: 1px solid var(--line);
+}
 .chapter select {background: transparent}
 .group {background: transparent}
 .more-items {background: var(--white); border-color: var(--line)}
@@ -298,4 +303,103 @@ input[type="file"]:not(:disabled)::file-selector-button:hover {background: var(-
 #notice:not([hidden]) {background: #172c30; border-left-color: var(--route)}
 @media (max-width: 520px) {
   body::before {background-position: 60% 50%}
+}
+
+.bar-inner {gap: 16px}
+.theme-toggle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  margin-inline-end: -10px;
+  color: var(--ink);
+}
+.theme-toggle svg {inline-size: 20px; block-size: 20px; fill: currentColor}
+.theme-toggle .theme-moon, [data-theme="day"] .theme-toggle .theme-sun {display: none}
+[data-theme="day"] .theme-toggle .theme-moon {display: block}
+.theme-toggle:hover {color: var(--accent)}
+@media (max-width: 520px) {
+  .bar-inner {gap: 0 10px}
+  .bar .theme-toggle {margin-inline-start: auto; margin-inline-end: -8px}
+  .bar .bar-inner nav {
+    order: 2;
+    width: 100%;
+    min-height: 37px;
+    margin-inline-start: 0;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+  }
+}
+
+:root[data-theme="day"] {
+  color-scheme: light;
+  --paper: #fff;
+  --white: #fff;
+  --deep-sea: #fff;
+  --ink: #202524;
+  --soft: #424a47;
+  --line: #858e89;
+  --accent: #29453f;
+  --mist: #f2f4f3;
+  --sea: #c6d1cd;
+  --shore: #a8b8b1;
+  --island: #788b81;
+  --route: #4b6258;
+  --warm: #465e52;
+  --sun: #a8b5a9;
+  --control: #e2e7e4;
+  --control-hover: #ced7d2;
+  --day-edge-size: max(100%, 600px) auto;
+}
+[data-theme="day"] body {background: #fff}
+[data-theme="day"] body::before,
+[data-theme="day"] body::after {
+  inset: auto -5px;
+  height: clamp(110px, 22vh, 205px);
+  filter: blur(2.5px) saturate(.50);
+  background-image: var(--background-grain), url("./coast-day.webp");
+  background-size: 144px 144px, var(--day-edge-size);
+  background-repeat: repeat, no-repeat;
+  background-blend-mode: soft-light, normal;
+}
+[data-theme="day"] body::before {
+  top: -5px;
+  background-position: center, right top;
+  mask-image: linear-gradient(to bottom, #000 0%, #000 12%, transparent 96%);
+  opacity: .20;
+}
+[data-theme="day"] body::after {
+  bottom: -5px;
+  background-position: center, center bottom;
+  mask-image: linear-gradient(to top, #000 0%, #000 12%, transparent 96%);
+  opacity: .28;
+}
+[data-theme="day"] :is(.jj-map,.jj-explore) .jj-stage {background: #fff}
+[data-theme="day"] :is(.jj-map,.jj-explore) .jj-scenery {opacity: .60}
+[data-theme="day"] .jj-node-title,
+[data-theme="day"] .jj-node[aria-current="step"] .jj-node-title {
+  background: #fff;
+  outline: 1px solid var(--line);
+}
+[data-theme="day"] .jj-film-caption,
+[data-theme="day"] .jj-journey .jj-film-open {
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--line);
+}
+[data-theme="day"] input, [data-theme="day"] select, [data-theme="day"] textarea {background: #fff}
+[data-theme="day"] .chapter select {background: transparent}
+[data-theme="day"] .chapter-background {color: #e1e6e3}
+[data-theme="day"] .details > .entry-author {color: #65706a}
+[data-theme="day"] .undated-shortcut {color: #53635b}
+[data-theme="day"] .kiwi-bird path {opacity: .92}
+[data-theme="day"] .jp-viewer::backdrop,
+[data-theme="day"] dialog::backdrop {background: #181c1bc7}
+[data-theme="day"] :is(.error,.state,.jp-alert) {color: #732d20}
+[data-theme="day"] #notice:not([hidden]) {background: var(--mist)}
+[data-theme="day"] :is(a,button,select):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }

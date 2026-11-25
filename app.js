@@ -472,6 +472,26 @@ async function saveDrafts() {
   }
 }
 function startUI() {
+  const themeToggle = byId("theme-toggle");
+  if (themeToggle) {
+    const root = document.documentElement;
+    const accent = document.querySelector('meta[name="theme-color"]');
+    const updateThemeLabel = () => {
+      const isDay = root.dataset.theme === "day";
+      const label = isDay ? "切换到夜间主题" : "切换到日间主题";
+      themeToggle.setAttribute("aria-label", label);
+      themeToggle.title = label;
+      if (accent) accent.content = isDay ? "#ffffff" : "#101b20";
+    };
+    updateThemeLabel();
+    themeToggle.addEventListener("click", () => {
+      root.dataset.theme = root.dataset.theme === "day" ? "night" : "day";
+      try { localStorage.setItem("oct-days-theme", root.dataset.theme); } catch {}
+      updateThemeLabel();
+      // The journey canvas reads its colors when it mounts.
+      if (state.page === "trip") render();
+    });
+  }
   byId("brand").addEventListener("click",e=>{e.preventDefault();state.page="trip";render()});
   document.querySelectorAll("[data-page]").forEach(node=>node.addEventListener("click",()=>{state.page=node.dataset.page;render()}));
   document.querySelectorAll("[data-mode]").forEach(node=>node.addEventListener("click",()=>{state.mode=node.dataset.mode;render()}));
