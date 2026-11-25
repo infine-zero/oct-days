@@ -79,18 +79,6 @@ window.TRAVEL_SHARE={
         "3add759a2adf704f445ad382e221f8e28bcd37c6a942f540c1ef46c9134d095f.jpg"
       ],
       "author": "kiwi"
-    },
-    {
-      "id": "inbox-90226f39daecb6e6ab5fd51f",
-      "day": "",
-      "time": "",
-      "place": "",
-      "event": "虚构联通测试 · OCT-DAYS-E2E-01",
-      "status": "confirmed",
-      "reflection": "这是一条用于验证 Oct.Days 自动发布的虚构测试，不是旅行记录。验证结束后会从手账移除。",
-      "people": [],
-      "photos": [],
-      "author": ""
     }
   ],
   "demo": false
