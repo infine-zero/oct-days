@@ -79,6 +79,20 @@ window.TRAVEL_SHARE={
         "3add759a2adf704f445ad382e221f8e28bcd37c6a942f540c1ef46c9134d095f.jpg"
       ],
       "author": "kiwi"
+    },
+    {
+      "id": "inbox-1e73f99490f3a5c1a5602b97",
+      "day": "",
+      "time": "",
+      "place": "",
+      "event": "自动化测试02",
+      "status": "confirmed",
+      "reflection": "assdfdafafafasfasf",
+      "people": [],
+      "photos": [
+        "32c36f2beb5281ad7815c3cfe60f4608451e94bf5a449814431a4a2130ec000b.jpg"
+      ],
+      "author": ""
     }
   ],
   "demo": false
