@@ -206,9 +206,7 @@
 .jj-film-caption {
   width: fit-content;
   max-width: calc(100% - 44px);
-  background: #242c2b;
   padding: 10px 16px;
-  border-radius: 8px;
 }
 @media (max-width: 550px) {
   .jj-stage { height: 242px; }
@@ -237,7 +235,17 @@
 .jj-journey .jj-action {min-width: 52px; background-color: var(--control); color: var(--ink)}
 .jj-journey .jj-action:hover {background-color: var(--control-hover)}
 .jj-node-dot {background: var(--island); border-color: var(--route); box-shadow: none}
-.jj-film-caption, .jj-journey .jj-film-open {background: var(--deep-sea); color: var(--ink)}
+.jj-film-caption {--film-line-fallback: #fff; color: var(--ink)}
+[data-theme="day"] .jj-film-caption {--film-line-fallback: #e9ecee}
+.jj-journey .jj-film-open {background: var(--deep-sea); color: var(--ink)}
+.jj-film-caption > * {white-space: pre-line}
+.jj-film-line {
+  background: var(--film-line-bg, var(--film-line-fallback));
+  color: var(--film-line-ink, #000);
+  padding-inline: .22em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
 .jj-film-caption small {color: var(--soft)}
 .jj-film-caption .entry-companions, .jj-film-caption .entry-author {
   display: block;

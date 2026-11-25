@@ -13,15 +13,15 @@
       }
     } catch {}
   </script>
-  <link rel="stylesheet" href="./style.css?v=nav-icons">
-  <link rel="stylesheet" href="./journey.css?v=quiet-byline">
+  <link rel="stylesheet" href="./style.css?v=people-perspectives-matched">
+  <link rel="stylesheet" href="./journey.css?v=film-photo-palette">
   <link rel="stylesheet" href="./photos.css">
   <script id="public-journal-snapshot" data-pages-origin="https://infine-zero.github.io" data-repository-url="https://api.github.com/repos/infine-zero/oct-days/contents/share-data.js?ref=main" src="./share-data.js?v=clean-titles"></script>
 
 
   <script defer src="./photos.js"></script>
-  <script defer src="./journey.js?v=osaka-city-map"></script>
-  <script defer src="./app.js?v=history-undated"></script>
+  <script defer src="./journey.js?v=film-photo-palette"></script>
+  <script defer src="./app.js?v=people-perspectives"></script>
 </head>
 <body>
   <header class="bar"><div class="bar-inner">
@@ -52,7 +52,14 @@
   </div></header>
   <main>
     <div id="notice" role="status" hidden></div>
-    <section class="intro"><h1 id="headline">Oct.Days</h1><p id="subtitle">日本旅行手账</p></section>
+    <section class="intro">
+      <div class="headline-row" id="headline-row">
+        <button type="button" class="people-perspective people-perspective-first" data-people-view="companions" hidden>同行的人</button>
+        <h1 id="headline" tabindex="-1">Oct.Days</h1>
+        <button type="button" class="people-perspective people-perspective-last" data-people-view="authors" hidden>落笔的人</button>
+      </div>
+      <p id="subtitle">日本旅行手账</p>
+    </section>
     <section id="trip-view" aria-label="旅程">
       <div class="journey-top">
           <div class="chapter"><h2 id="chapter">10.01</h2><select id="days" aria-label="选择旅程日期" hidden></select></div>

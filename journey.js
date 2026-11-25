@@ -155,6 +155,51 @@
     return {x:points[0][0],y:points[0][1]};
   }
 
+  const linear = Array.from({length:256}, (_,value)=>{
+    const v=value/255;
+    return v<=.04045 ? v/12.92 : ((v+.055)/1.055)**2.4;
+  });
+  const luminance = (r,g,b)=>.2126*linear[r]+.7152*linear[g]+.0722*linear[b];
+
+  function filmColor(photo, width, height, takeDark) {
+    try {
+      if (!photo.naturalWidth || !photo.naturalHeight || !width || !height) return null;
+      const ratio=width/height;
+      const sw=Math.min(photo.naturalWidth,photo.naturalHeight*ratio);
+      const sh=Math.min(photo.naturalHeight,photo.naturalWidth/ratio);
+      const sample=document.createElement("canvas");
+      sample.width=64; sample.height=Math.max(1,Math.min(64,Math.round(64/ratio)));
+      const ctx=sample.getContext("2d",{willReadFrequently:true});
+      if (!ctx) return null;
+      ctx.drawImage(photo,(photo.naturalWidth-sw)/2,(photo.naturalHeight-sh)/2,sw,sh,0,0,sample.width,sample.height);
+      const {data}=ctx.getImageData(0,0,sample.width,sample.height);
+      const pixels=[];
+      for (let i=0;i<data.length;i+=4) {
+        if (data[i+3]<245) continue;
+        const [r,g,b]=[data[i],data[i+1],data[i+2]];
+        pixels.push({r,g,b,y:luminance(r,g,b)});
+      }
+      if (pixels.length<12) return null;
+      pixels.sort((a,b)=>takeDark ? a.y-b.y : b.y-a.y);
+      // Use the dominant color cluster in the 4th–15th percentile from the chosen end.
+      // This keeps a real sample while skipping outliers and ignoring transparency.
+      const start=Math.floor(pixels.length*.04), end=Math.ceil(pixels.length*.15);
+      const bins=new Map();
+      for (const px of pixels.slice(start,end)) {
+        const key=(px.r>>4)*256+(px.g>>4)*16+(px.b>>4);
+        if (!bins.has(key)) bins.set(key,[]);
+        bins.get(key).push(px);
+      }
+      let best=[];
+      for (const bin of bins.values()) if (bin.length>best.length) best=bin;
+      const pick=best[Math.floor(best.length/2)];
+      return pick ? {bg:`rgb(${pick.r}, ${pick.g}, ${pick.b})`,ink:pick.y>=.179129 ? "#000" : "#fff"} : null;
+    } catch {
+      // Canvas cannot sample some cross-origin images. Keep their visible photo and the theme fallback.
+      return null;
+    }
+  }
+
   function mount(container, entries, options = {}) {
     mounts.get(container)?.destroy();
     const theme = getComputedStyle(container);
@@ -196,16 +241,20 @@
     caption.hidden = mode !== "film" || !records.length;
     const filmTime = el("small"), filmTitle = el("h3"), filmNote = el("p");
     const filmCompanions = el("small","entry-companions"), filmAuthor = el("small","entry-author");
-    const filmPhoto = el("img","jj-film-photo");
+    let filmPhoto = el("img","jj-film-photo"), filmURL = null, paletteFrame = 0;
     filmPhoto.alt="";filmPhoto.hidden=true;
     const viewPhotos = el("button","jj-film-open");
     viewPhotos.type="button";viewPhotos.hidden=true;
-    filmPhoto.onload=()=>{filmPhoto.hidden=false;};
-    filmPhoto.onerror=()=>{filmPhoto.hidden=true;meta.textContent="记忆放映 · 备用风景插画";};
     viewPhotos.addEventListener("click",()=>{
       pause();sync();window.JournalPhotos?.open(records[current],0);
     });
-    caption.append(filmTime,filmTitle,filmCompanions,filmNote,filmAuthor);
+    const filmRows = [filmTime,filmTitle,filmCompanions,filmNote,filmAuthor];
+    const filmLines = filmRows.map(row=>{
+      const line = el("span","jj-film-line");
+      row.append(line);
+      caption.append(row);
+      return line;
+    });
     stage.append(scenery,filmPhoto,cast,markers,meta,empty,caption,viewPhotos);
     const footer = el("div","jj-footer");
     const play = el("button","jj-action","播放");
@@ -222,6 +271,46 @@
     play.hidden=!records.length;
     footer.append(play,range,timeText); footer.hidden = !records.length && !hasNextDay;
     root.append(stage,footer);container.replaceChildren(root);
+
+    function clearFilmColor() {
+      caption.style.removeProperty("--film-line-bg");
+      caption.style.removeProperty("--film-line-ink");
+    }
+    function scheduleFilmColor(image) {
+      cancelAnimationFrame(paletteFrame);
+      paletteFrame=requestAnimationFrame(()=>{
+        if (disposed || image!==filmPhoto || image.hidden) return;
+        const palette=filmColor(image,width,height,document.documentElement.dataset.theme==="day");
+        if (palette) {
+          caption.style.setProperty("--film-line-bg",palette.bg);
+          caption.style.setProperty("--film-line-ink",palette.ink);
+        } else clearFilmColor();
+      });
+    }
+    function showFilmPhoto(url) {
+      if (url===filmURL) return;
+      filmURL=url;
+      cancelAnimationFrame(paletteFrame);
+      clearFilmColor();
+      const image=el("img","jj-film-photo");
+      image.alt="";image.hidden=true;
+      filmPhoto.replaceWith(image);
+      filmPhoto=image;
+      meta.textContent=url ? "记忆放映 · 事件照片" : "记忆放映 · 风景插画";
+      if (!url) return;
+      image.onload=()=>{
+        if (disposed || image!==filmPhoto) return;
+        image.hidden=false;
+        scheduleFilmColor(image);
+      };
+      image.onerror=()=>{
+        if (disposed || image!==filmPhoto) return;
+        image.hidden=true;
+        meta.textContent="记忆放映 · 备用风景插画";
+        clearFilmColor();
+      };
+      image.src=url;
+    }
 
     function setup(canvas) {
       const scale=Math.min(window.devicePixelRatio || 1,2);
@@ -254,8 +343,8 @@
         btn.type="button";
         btn.dataset.status=record.status;
         btn.style.left=point.x+"px";btn.style.top=(point.y-6)+"px";
-        const label=record.place || "地点待补";
-        btn.title=[record.time,label,record.event].filter(Boolean).join(" · ");
+        const label=record.place || record.event;
+        btn.title=[record.time,record.place,record.event].filter(Boolean).join(" · ");
         btn.setAttribute("aria-label",btn.title);
         btn.append(el("span","jj-node-dot"),el("span","jj-node-title",label));
         btn.addEventListener("click",()=>jump(start+i));
@@ -322,22 +411,18 @@
       play.disabled=records.length<2;
       play.textContent=playing?"暂停":(mode==="explore"?"自动走":mode==="film"?"放映":"回放");
       play.setAttribute("aria-pressed",String(playing));
-      timeText.textContent=[record.time||"时间待补",record.place||"地点待补"].join(" · ");
-      filmTime.textContent=[record.day,record.time,record.place].filter(Boolean).join(" / ");
-      filmTitle.textContent=record.event||"事件待补";
-      filmCompanions.textContent=record.companions||"";
-      filmCompanions.hidden=!filmCompanions.textContent;
-      filmNote.textContent=record.reflection||"";
-      filmNote.hidden=!filmNote.textContent;
-      filmAuthor.textContent=record.author||"";
-      filmAuthor.hidden=!filmAuthor.textContent;
+      timeText.textContent=[record.time,record.place].filter(Boolean).join(" · ");
+      timeText.hidden=!timeText.textContent;
+      const captionText = [[record.day,record.time,record.place].filter(Boolean).join(" / "),
+        record.event,record.companions,record.reflection,record.author];
+      captionText.forEach((text,i)=>{
+        const value = text || "";
+        if (filmLines[i].textContent !== value) filmLines[i].textContent = value;
+        filmRows[i].hidden = !value;
+      });
       if(mode==="film") {
         const imageUrl=window.JournalPhotos?.url(record.photos?.[0]) || "";
-        if(imageUrl!==(filmPhoto.getAttribute("src")||"")){
-          filmPhoto.hidden=true;
-          if(imageUrl)filmPhoto.src=imageUrl;else filmPhoto.removeAttribute("src");
-        }
-        meta.textContent=imageUrl?"记忆放映 · 事件照片":"记忆放映 · 风景插画";
+        showFilmPhoto(imageUrl);
         viewPhotos.hidden=!imageUrl;
         if(imageUrl)viewPhotos.textContent="查看照片 · "+record.photos.length;
       }
@@ -346,6 +431,7 @@
       if(disposed)return;
       width=Math.max(1,stage.clientWidth);height=Math.max(1,stage.clientHeight);
       const bg=setup(scenery);actors=setup(cast);
+      if (mode==="film" && !filmPhoto.hidden) scheduleFilmColor(filmPhoto);
       (city ? cityscape : landscape)(bg,width,height,tones);sync(true);
     }
     function pause(){
@@ -432,7 +518,7 @@
     resize();
     const handle={
       select(id) { const i=records.findIndex(r=>r.id===id);if(i>=0){pause();stopWalking();update(i,false);} },
-      destroy() {disposed=true;pause();stopWalking();observer?.disconnect();window.removeEventListener("resize",resize);mounts.delete(container);}
+      destroy() {disposed=true;cancelAnimationFrame(paletteFrame);pause();stopWalking();observer?.disconnect();window.removeEventListener("resize",resize);mounts.delete(container);}
     };
     mounts.set(container,handle);return handle;
   }

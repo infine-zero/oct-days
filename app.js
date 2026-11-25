@@ -17,7 +17,7 @@ function button(label, className, onClick) {
 let shared = window.TRAVEL_SHARE;
 let sampleEvents = [];
 const statusNames = {confirmed:"确认经历", planned:"计划", pending:"待确认"};
-const state = {events:[], tripStart:"", demo:false, page:"trip", mode:"map", day:"", selected:"", drafts:[], original:null, loaded:false};
+const state = {events:[], tripStart:"", demo:false, page:"trip", peopleView:"companions", mode:"map", day:"", selected:"", drafts:[], original:null, loaded:false};
 let journeyControl = null;
 let materialDraft = null;
 let openingEdit = false;
@@ -47,6 +47,21 @@ function partyNames(entry) {
 function appendCompanions(container, entry) {
   const names = partyNames(entry);
   if (names) container.append(make("span","metadata entry-companions",names));
+}
+// Clean only generated reader metadata, not the original note or editor fields.
+function readerField(value) {
+  const text = (value || "").trim();
+  return /^(?:(?:时间|时段|地点|日期|事件)\s*)?待补$/.test(text) ? "" : text;
+}
+function readerEntry(entry) {
+  return {...entry,day:dayLabel(dayKey(entry.day)),time:readerField(entry.time),place:readerField(entry.place)};
+}
+function readerStatus(entry) {
+  return entry.status === "confirmed" ? "" : statusNames[entry.status];
+}
+function appendReaderMeta(container, fields, separator = " · ") {
+  const text=fields.filter(Boolean).join(separator);
+  if (text) container.append(make("span","metadata",text));
 }
 function timeOrder(value) {
   const exact = value.match(/^(?:约|大约)?(\d{1,2}):(\d{2})/);
@@ -79,7 +94,7 @@ function activate(selector, key, value) {
   });
 }
 function captureView() {
-  return {page:state.page, mode:state.mode, day:state.day, selected:state.selected, scrollY:window.scrollY};
+  return {page:state.page, peopleView:state.peopleView, mode:state.mode, day:state.day, selected:state.selected, scrollY:window.scrollY};
 }
 function writeView(method, detail, hasSource, url = location.href) {
   history[method]({...history.state, [viewStateKey]:{detail, hasSource, view:captureView()}}, "", url);
@@ -109,6 +124,7 @@ function restoreView(route) {
   state.page = dayDetail ? (direct === initialNote && view?.page === "history" ? "history" : "trip")
     : ["people","places","album"].includes(view?.page) ? view.page : "trip";
   state.mode = view?.mode || "map";
+  state.peopleView = view?.peopleView === "authors" ? "authors" : "companions";
   state.day = direct ?? view?.day ?? "";
   state.selected = !dayDetail || view?.day === direct ? view?.selected || "" : "";
   render();
@@ -183,7 +199,12 @@ function render() {
   activate("[data-page]", "page", state.page==="history" ? "trip" : state.page);
   activate("[data-mode]", "mode", state.mode);
   const headline = byId("headline");
-  const heading = ({people:"同行的人",places:"记忆里的地点",album:"旅途相册",history:"建站历史"})[state.page] || "Oct.Days";
+  const heading = ({people:state.peopleView === "authors" ? "落笔的人" : "同行的人",places:"记忆里的地点",album:"旅途相册",history:"建站历史"})[state.page] || "Oct.Days";
+  const isPeople = state.page === "people";
+  byId("headline-row").classList.toggle("is-people", isPeople);
+  document.querySelectorAll("[data-people-view]").forEach(node=>{
+    node.hidden = !isPeople || node.dataset.peopleView === state.peopleView;
+  });
   const isWordmark = state.page === "trip";
   if (headline.textContent !== heading || headline.classList.contains("wordmark") !== isWordmark) {
     headline.classList.toggle("wordmark", isWordmark);
@@ -225,8 +246,8 @@ function render() {
   days.replaceChildren(...[...groups.keys()].map(key=>new Option(dayLabel(key),key)));
   days.value = state.day;
   const samples = records
-    .filter(item=>item.status==="confirmed" && (state.mode==="film" || item.place))
-    .map(item=>({...item,day:dayLabel(dayKey(item.day)),companions:partyNames(item)}));
+    .filter(item=>item.status==="confirmed" && (state.mode==="film" || readerField(item.place)))
+    .map(item=>({...readerEntry(item),companions:partyNames(item)}));
   const nextDay = days.options[days.selectedIndex + 1]?.value;
   journeyControl = window.JournalJourney.mount(byId("journey"), samples, {
     mode:state.mode, selectedId:state.selected, onSelect:selectRecord,
@@ -252,7 +273,7 @@ function paintList(records) {
     }
     const open = button("","record-main",()=>{
       state.selected=entry.id;
-      if (entry.status==="confirmed" && (entry.place || state.mode==="film")) journeyControl?.select(entry.id);
+      if (entry.status==="confirmed" && (readerField(entry.place) || state.mode==="film")) journeyControl?.select(entry.id);
       paintList(records);
       rememberDetail();
       list.querySelector(".is-selected .record-main")?.focus({preventScroll:true});
@@ -260,7 +281,8 @@ function paintList(records) {
     if (active) open.setAttribute("aria-current","step");
     open.append(make("strong","",entry.event));
     appendCompanions(open, entry);
-    open.append(make("span","metadata",[entry.time||"时间待补", entry.place, entry.photos?.length ? entry.photos.length+" 张照片" : "", entry.status==="confirmed"?"":statusNames[entry.status]].filter(Boolean).join(" · ")));
+    appendReaderMeta(open,[readerField(entry.time),readerField(entry.place),
+      entry.photos?.length ? entry.photos.length+" 张照片" : "",readerStatus(entry)]);
     row.append(open);
     if (active && !state.demo && !shared) row.append(button("编辑","quiet",()=>editEntry(entry)));
     if (active) {
@@ -275,7 +297,7 @@ function paintList(records) {
       }
       if (detail.childElementCount) row.append(detail);
       if (entry.photos?.length) {
-        row.append(window.JournalPhotos.gallery({...entry,day:dayLabel(dayKey(entry.day))}, {preview:true}));
+        row.append(window.JournalPhotos.gallery(readerEntry(entry), {preview:true}));
       }
     }
     list.append(row);
@@ -286,9 +308,9 @@ function paintAlbum(groups) {
   for (const [day,entries] of groups) for (const entry of entries) {
     if (!entry.photos?.length) continue;
     const card=make("article","group album-group");
-    card.append(make("p","metadata",[dayLabel(day),entry.time,entry.place].filter(Boolean).join(" · ")),make("h2","",entry.event));
+    card.append(make("p","metadata",[dayLabel(day),readerField(entry.time),readerField(entry.place)].filter(Boolean).join(" · ")),make("h2","",entry.event));
     appendCompanions(card, entry);
-    card.append(window.JournalPhotos.gallery({...entry,day:dayLabel(day)}));
+    card.append(window.JournalPhotos.gallery(readerEntry(entry)));
     card.append(button("回到这条手记","quiet",()=>openRecord(day, entry.id)));
     target.append(card);
   }
@@ -297,16 +319,19 @@ function paintAlbum(groups) {
 function paintIndex() {
   const target = byId("index-list");
   const isPeople = state.page==="people";
+  const authorsOnly = isPeople && state.peopleView === "authors";
   const groups = new Map();
   for (const records of groupDays().values()) for (const entry of records) {
-    const names = isPeople ? new Set([entry.author, ...entry.people].filter(Boolean)) : [entry.place].filter(Boolean);
+    const names = authorsOnly ? [entry.author].filter(Boolean)
+      : isPeople ? new Set([entry.author, ...entry.people].filter(Boolean))
+      : [readerField(entry.place)].filter(Boolean);
     for (const name of names) {
       if (!groups.has(name)) groups.set(name,[]);
       groups.get(name).push(entry);
     }
   }
   target.replaceChildren();
-  if (!groups.size) target.append(make("p","section-placeholder",isPeople?"手记里填写署名或同行人，就能在这里找到对应的手记。":"手记里填写地点，就能在这里找到每次到访的经过。"));
+  if (!groups.size) target.append(make("p","section-placeholder",authorsOnly?"手记有署名后，就能在这里找到作者的作品。":isPeople?"手记里填写署名或同行人，就能在这里找到对应的手记。":"手记里填写地点，就能在这里找到每次到访的经过。"));
   for (const [name,records] of groups) {
     const group=make("article","group");
     group.append(make("h2","",name));
@@ -318,7 +343,7 @@ function paintIndex() {
       });
       open.append(make("strong","",entry.event));
       appendCompanions(open, entry);
-      open.append(make("span","metadata",dayLabel(dayKey(entry.day))+" · "+(entry.time||"时间待补")+" · "+statusNames[entry.status]));
+      appendReaderMeta(open,[dayLabel(dayKey(entry.day)),readerField(entry.time),readerStatus(entry)]);
       group.append(open);
     }
     target.append(group);
@@ -596,6 +621,13 @@ function startUI() {
   }
   byId("brand").addEventListener("click",e=>{e.preventDefault();showPage("trip")});
   document.querySelectorAll("[data-page]").forEach(node=>node.addEventListener("click",()=>showPage(node.dataset.page)));
+  document.querySelectorAll("[data-people-view]").forEach(node=>node.addEventListener("click",()=>{
+    if (state.page !== "people") return;
+    state.peopleView = node.dataset.peopleView;
+    render();
+    byId("headline").focus({preventScroll:true});
+    writeView("replaceState", false, false);
+  }));
   const openHistory = byId("site-history-open");
   const historyBack = byId("site-history-back");
   openHistory.addEventListener("click",()=>{
