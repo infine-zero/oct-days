@@ -78,6 +78,11 @@ function selectRecord(id) {
   const event = collection().find(item=>item.id===id);
   if (event && state.page==="trip") paintList(groupDays().get(dayKey(event.day)) || []);
 }
+function selectDay(day) {
+  state.day = day;
+  state.selected = "";
+  render();
+}
 function render() {
   const events = collection();
   const groups = groupDays();
@@ -121,7 +126,11 @@ function render() {
   const samples = records
     .filter(item=>item.status==="confirmed" && (state.mode==="film" || item.place))
     .map(item=>({...item,day:dayLabel(dayKey(item.day)),companions:partyNames(item)}));
-  journeyControl = window.JournalJourney.mount(byId("journey"), samples, {mode:state.mode, selectedId:state.selected, onSelect:selectRecord});
+  const nextDay = days.options[days.selectedIndex + 1]?.value;
+  journeyControl = window.JournalJourney.mount(byId("journey"), samples, {
+    mode:state.mode, selectedId:state.selected, onSelect:selectRecord,
+    onNextDay:state.mode==="map" && nextDay && nextDay!==initialNote ? () => selectDay(nextDay) : null,
+  });
   paintList(records);
 }
 function paintList(records) {
@@ -460,7 +469,7 @@ function startUI() {
   byId("brand").addEventListener("click",e=>{e.preventDefault();state.page="trip";render()});
   document.querySelectorAll("[data-page]").forEach(node=>node.addEventListener("click",()=>{state.page=node.dataset.page;render()}));
   document.querySelectorAll("[data-mode]").forEach(node=>node.addEventListener("click",()=>{state.mode=node.dataset.mode;render()}));
-  byId("days").addEventListener("change",event=>{state.day=event.target.value;state.selected="";render()});
+  byId("days").addEventListener("change",event=>selectDay(event.target.value));
   if (shared) return;
   byId("entry-dialog").addEventListener("close",finishEdit);
   window.addEventListener("pagehide",()=>{if(activeEdit) releaseEdit(activeEdit)});

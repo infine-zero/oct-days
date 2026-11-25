@@ -72,6 +72,9 @@
       tones[name] = theme.getPropertyValue("--" + name).trim();
     }
     const records = Array.isArray(entries) ? entries : [];
+    const hasNextDay = typeof options.onNextDay === "function";
+    const lastStep = Math.max(0, records.length - 1);
+    const nextDayStep = lastStep + 1;
     const mode = ["map","explore","film"].includes(options.mode) ? options.mode : "map";
     const initial = records.findIndex(record => record.id === options.selectedId);
     let current = Math.max(0, initial);
@@ -115,9 +118,14 @@
     const timeText = el("span","jj-foot-time");
     timeText.setAttribute("aria-live","polite");
     const range = el("input","jj-step-range");
-    range.type="range"; range.min="0"; range.max=String(Math.max(0,records.length-1));range.step="1";
+    range.type="range"; range.min="0"; range.max=String(hasNextDay ? nextDayStep : lastStep);range.step="1";
+    range.value="0";
     range.setAttribute("aria-label","沿时间线跳转片段");
-    footer.append(play,range,timeText); footer.hidden = !records.length;
+    range.hidden=records.length<2 && !hasNextDay;
+    range.disabled=range.hidden;
+    if (hasNextDay) range.title="拖到最右端进入下一天";
+    play.hidden=!records.length;
+    footer.append(play,range,timeText); footer.hidden = !records.length && !hasNextDay;
     root.append(stage,footer);container.replaceChildren(root);
 
     function setup(canvas) {
@@ -206,7 +214,6 @@
       });
       range.value=String(current);
       range.setAttribute("aria-valuetext",[record.time,record.place,record.event].filter(Boolean).join("，"));
-      range.disabled=records.length<2;
       play.disabled=records.length<2;
       play.textContent=playing?"暂停":(mode==="explore"?"自动走":mode==="film"?"放映":"回放");
       play.setAttribute("aria-pressed",String(playing));
@@ -229,7 +236,6 @@
         viewPhotos.hidden=!imageUrl;
         if(imageUrl)viewPhotos.textContent="查看照片 · "+record.photos.length;
       }
-      range.hidden=records.length<2;
     }
     function resize(){
       if(disposed)return;
@@ -304,7 +310,17 @@
       if(current>=records.length-1)update(0);
       playing=true;sync();frame=requestAnimationFrame(tick);
     });
-    range.addEventListener("input",()=>jump(Number(range.value)));
+    range.addEventListener("input",()=>{
+      if (hasNextDay && Number(range.value) === nextDayStep) {
+        pause();
+        range.setAttribute("aria-valuetext","下一天");
+        return;
+      }
+      jump(Number(range.value));
+    });
+    range.addEventListener("change",()=>{
+      if (hasNextDay && Number(range.value) === nextDayStep) options.onNextDay();
+    });
     const observer=typeof ResizeObserver!=="undefined"?new ResizeObserver(resize):null;
     observer?.observe(stage);
     if(!observer)window.addEventListener("resize",resize);
