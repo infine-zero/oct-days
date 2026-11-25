@@ -346,7 +346,7 @@ input[type="file"]:not(:disabled)::file-selector-button:hover {background: var(-
   --ink: #202524;
   --soft: #424a47;
   --line: #858e89;
-  --accent: #29453f;
+  --accent: #00727b;
   --mist: #f2f4f3;
   --map-paper: #fff;
   --sea: #e5ebe8;
@@ -392,10 +392,24 @@ input[type="file"]:not(:disabled)::file-selector-button:hover {background: var(-
 }
 [data-theme="day"] :is(.jj-map,.jj-explore) .jj-stage {background: #fff}
 [data-theme="day"] :is(.jj-map,.jj-explore) .jj-scenery {opacity: .60}
-[data-theme="day"] .jj-node-title,
-[data-theme="day"] .jj-node[aria-current="step"] .jj-node-title {
+[data-theme="day"] :is(.nav-link,.mode).active {
+  color: var(--accent);
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 2px;
+}
+[data-theme="day"] .jj-node-title {
   background: #fff;
   outline: 1px solid var(--line);
+}
+[data-theme="day"] .jj-node[aria-current="step"] .jj-node-title {
+  color: #fff;
+  background: var(--accent);
+  outline-color: var(--accent);
+}
+[data-theme="day"] .jj-node[data-status="confirmed"][aria-current="step"] .jj-node-dot {
+  background: var(--accent);
+  border-color: #fff;
+  box-shadow: 0 0 0 1px var(--accent);
 }
 [data-theme="day"] .jj-film-caption,
 [data-theme="day"] .jj-journey .jj-film-open {
@@ -418,7 +432,7 @@ input[type="file"]:not(:disabled)::file-selector-button:hover {background: var(-
 }
 
 /* Site notes belong outside the travel diary. */
-.other-entry {
+.site-history-entry {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 3px 14px;
@@ -427,10 +441,10 @@ input[type="file"]:not(:disabled)::file-selector-button:hover {background: var(-
   text-align: start;
   border-block: 1px solid var(--line);
 }
-.other-entry strong {font-size: 18px}
-.other-entry > span {color: var(--accent)}
-.other-entry small {color: var(--soft); font-size: 14px}
-.other-entry:hover strong {text-decoration: underline; text-underline-offset: .2em}
+.site-history-entry strong {font-size: 18px}
+.site-history-entry > span {color: var(--accent)}
+.site-history-entry small {color: var(--soft); font-size: 14px}
+.site-history-entry:hover strong {text-decoration: underline; text-underline-offset: .2em}
 .site-history {padding-block-end: 36px}
 .history-back {margin-block-end: 15px; color: var(--accent)}
 .history-intro {color: var(--soft); font-size: 14px}

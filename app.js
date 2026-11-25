@@ -101,16 +101,21 @@ function linkedDay() {
   return groupDays().has(value) ? value : null;
 }
 function restoreView(route) {
+  const leftHistory = state.page === "history";
   returning = false;
   const view = route?.view;
   const direct = linkedDay();
   dayDetail = direct !== null;
-  state.page = dayDetail ? "trip" : view?.page || "trip";
+  state.page = dayDetail ? (direct === initialNote && view?.page === "history" ? "history" : "trip")
+    : ["people","places","album"].includes(view?.page) ? view.page : "trip";
   state.mode = view?.mode || "map";
   state.day = direct ?? view?.day ?? "";
   state.selected = !dayDetail || view?.day === direct ? view?.selected || "" : "";
   render();
   window.scrollTo(0, view?.scrollY || 0);
+  if (leftHistory && state.page === "trip" && state.day === initialNote) {
+    byId("site-history-open").focus({preventScroll:true});
+  }
 }
 function rememberDetail(url = location.href) {
   if (dayDetail) writeView("replaceState", true, history.state?.[viewStateKey]?.hasSource === true, url);
@@ -175,10 +180,10 @@ function render() {
   if (!groups.has(state.day)) state.day = groups.keys().next().value;
   const records = groups.get(state.day);
   if (!records.some(item=>item.id===state.selected)) state.selected = records.find(item=>item.status==="confirmed")?.id || records[0]?.id || "";
-  activate("[data-page]", "page", state.page==="history" ? "other" : state.page);
+  activate("[data-page]", "page", state.page==="history" ? "trip" : state.page);
   activate("[data-mode]", "mode", state.mode);
   const headline = byId("headline");
-  const heading = ({people:"同行的人",places:"记忆里的地点",album:"旅途相册",other:"其他",history:"建站历史"})[state.page] || "Oct.Days";
+  const heading = ({people:"同行的人",places:"记忆里的地点",album:"旅途相册",history:"建站历史"})[state.page] || "Oct.Days";
   const isWordmark = state.page === "trip";
   if (headline.textContent !== heading || headline.classList.contains("wordmark") !== isWordmark) {
     headline.classList.toggle("wordmark", isWordmark);
@@ -197,9 +202,8 @@ function render() {
     byId("share").disabled = events.length===0;
   }
   byId("trip-view").hidden = state.page!=="trip";
-  const otherView = byId("other-view"), siteHistory = byId("site-history");
-  if (otherView) otherView.hidden = state.page!=="other";
-  if (siteHistory) siteHistory.hidden = state.page!=="history";
+  byId("site-history").hidden = state.page!=="history";
+  byId("site-history-open").hidden = state.page!=="trip" || state.day!==initialNote;
   byId("index-view").hidden = !["people","places","album"].includes(state.page);
   const undated = byId("undated-shortcut");
   undated.hidden = false;
@@ -210,7 +214,7 @@ function render() {
   undated.querySelector(".kiwi-label").textContent = kiwiLabel;
   journeyControl?.destroy();
   journeyControl = null;
-  if (["other","history"].includes(state.page)) return;
+  if (state.page==="history") return;
   if (state.page==="album") {paintAlbum(groups);return;}
   if (state.page!=="trip") {paintIndex();return;}
   const days = byId("days");
@@ -594,16 +598,17 @@ function startUI() {
   document.querySelectorAll("[data-page]").forEach(node=>node.addEventListener("click",()=>showPage(node.dataset.page)));
   const openHistory = byId("site-history-open");
   const historyBack = byId("site-history-back");
-  openHistory?.addEventListener("click",()=>{
-    showPage("history");
+  openHistory.addEventListener("click",()=>{
+    if (state.page !== "trip" || state.day !== initialNote) return;
+    rememberDetail();
+    state.page = "history";
+    writeView("pushState", true, true, detailURL(initialNote));
+    render();
     window.scrollTo(0,0);
-    historyBack?.focus({preventScroll:true});
+    historyBack.focus({preventScroll:true});
+    rememberDetail();
   });
-  historyBack?.addEventListener("click",()=>{
-    showPage("other");
-    window.scrollTo(0,0);
-    openHistory?.focus({preventScroll:true});
-  });
+  historyBack.addEventListener("click", returnFromDay);
   document.querySelectorAll("[data-mode]").forEach(node=>node.addEventListener("click",()=>{state.mode=node.dataset.mode;render();rememberDetail()}));
   byId("days").addEventListener("change",event=>selectDay(event.target.value));
   const undated = byId("undated-shortcut");

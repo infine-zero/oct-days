@@ -13,7 +13,7 @@
       }
     } catch {}
   </script>
-  <link rel="stylesheet" href="./style.css?v=site-history-byline">
+  <link rel="stylesheet" href="./style.css?v=site-history-byline-undated-accent">
   <link rel="stylesheet" href="./journey.css?v=quiet-byline">
   <link rel="stylesheet" href="./photos.css">
   <script id="public-journal-snapshot" data-pages-origin="https://infine-zero.github.io" data-repository-url="https://api.github.com/repos/infine-zero/oct-days/contents/share-data.js?ref=main" src="./share-data.js?v=clean-titles"></script>
@@ -21,13 +21,13 @@
 
   <script defer src="./photos.js"></script>
   <script defer src="./journey.js?v=osaka-city-map"></script>
-  <script defer src="./app.js?v=site-history"></script>
+  <script defer src="./app.js?v=history-undated"></script>
 </head>
 <body>
   <header class="bar"><div class="bar-inner">
     <a id="brand" class="brand" href="#trip">Oct.Days</a>
     <nav aria-label="手账导航"><a class="submission-link" href="https://github.com/infine-zero/oct-days-inbox/issues/new?template=note.yml">投稿</a><a class="submission-link entry-edit-link" href="https://github.com/infine-zero/oct-days/edit/main/share-data.js">编辑</a>
-      <button class="nav-link active" data-page="trip">旅程</button><button class="nav-link" data-page="people">人物</button><button class="nav-link" data-page="places">地点</button><button class="nav-link" data-page="album">相册</button><button class="nav-link" data-page="other">其他</button>
+      <button class="nav-link active" data-page="trip">旅程</button><button class="nav-link" data-page="people">人物</button><button class="nav-link" data-page="places">地点</button><button class="nav-link" data-page="album">相册</button>
     </nav>
     <button id="theme-toggle" class="theme-toggle" type="button" aria-label="切换到日间主题" title="切换到日间主题">
       <svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -49,17 +49,15 @@
       <div id="journey"></div>
       <section class="entries" aria-label="当日手记">
         <div id="event-list"></div>
+        <button class="site-history-entry" id="site-history-open" type="button" hidden>
+          <strong>建站历史</strong><span aria-hidden="true">→</span>
+          <small>看看这本手账是怎样一点点长出来的。</small>
+        </button>
       </section>
     </section>
     <section id="index-view" hidden><div id="index-list"></div></section>
-    <section id="other-view" aria-label="其他" hidden>
-      <button class="other-entry" id="site-history-open" type="button">
-        <strong>建站历史</strong><span aria-hidden="true">→</span>
-        <small>看看这本手账是怎样一点点长出来的。</small>
-      </button>
-    </section>
     <article id="site-history" class="site-history" aria-labelledby="headline" hidden>
-      <button class="quiet history-back" id="site-history-back" type="button">← 返回其他</button>
+      <button class="quiet history-back" id="site-history-back" type="button">← 返回某天</button>
       <p class="history-intro">记录 Oct.Days 上线以来的重要变化，按公开版本的北京时间从早到晚排列。</p>
       <ol>
         <li>
