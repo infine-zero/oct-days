@@ -135,6 +135,20 @@ h1 {font-size: clamp(30px, 5vw, 40px); font-weight: 750; margin: 0 0 8px; text-w
 .mode.active {text-decoration: underline; text-underline-offset: .4em}
 .mode:not(.active) {background-image: none}
 .entries {padding: 16px 0 52px}
+#event-list {scroll-margin-block-start: 16px}
+.undated-shortcut {
+  position: fixed;
+  z-index: 3;
+  inset-inline-end: max(16px, env(safe-area-inset-right));
+  inset-block-end: max(16px, env(safe-area-inset-bottom));
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgb(235 239 240 / 22%);
+  color: #f0f1f1;
+  font-size: 13px;
+}
+.undated-shortcut:hover, .undated-shortcut[aria-pressed="true"] {background: rgb(235 239 240 / 35%)}
 .event:has(> .chapter-background) {position: relative; isolation: isolate}
 .chapter-background {
   position: absolute;

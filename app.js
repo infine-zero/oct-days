@@ -25,7 +25,7 @@ let activeEdit = null;
 const collection = () => !shared && state.demo ? sampleEvents : state.events;
 const initialNote = "日期待补";
 function dayKey(value) {
-  if (!value) return initialNote;
+  if (!value || value==="某天" || value===initialNote) return initialNote;
   if (!state.demo && state.tripStart && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const delta = (Date.parse(value+"T00:00:00Z") - Date.parse(state.tripStart+"T00:00:00Z")) / 86400000;
     if (Number.isInteger(delta) && delta >= 0) return "第"+(delta+1)+"天";
@@ -33,6 +33,7 @@ function dayKey(value) {
   return value;
 }
 function dayLabel(day) {
+  if (day === initialNote) return "某天";
   if (day !== "第1天") return day;
   return !state.demo && state.tripStart ? state.tripStart.slice(5).replace("-", ".") : "10.01";
 }
@@ -112,6 +113,9 @@ function render() {
   }
   byId("trip-view").hidden = state.page!=="trip";
   byId("index-view").hidden = state.page==="trip";
+  const undated = byId("undated-shortcut");
+  undated.hidden = !groups.has(initialNote);
+  undated.setAttribute("aria-pressed", String(state.page === "trip" && state.day === initialNote));
   journeyControl?.destroy();
   journeyControl = null;
   if (state.page==="album") {paintAlbum(groups);return;}
@@ -470,6 +474,11 @@ function startUI() {
   document.querySelectorAll("[data-page]").forEach(node=>node.addEventListener("click",()=>{state.page=node.dataset.page;render()}));
   document.querySelectorAll("[data-mode]").forEach(node=>node.addEventListener("click",()=>{state.mode=node.dataset.mode;render()}));
   byId("days").addEventListener("change",event=>selectDay(event.target.value));
+  byId("undated-shortcut").addEventListener("click",()=>{
+    state.page = "trip";
+    selectDay(initialNote);
+    byId("event-list").scrollIntoView({block:"start"});
+  });
   if (shared) return;
   byId("entry-dialog").addEventListener("close",finishEdit);
   window.addEventListener("pagehide",()=>{if(activeEdit) releaseEdit(activeEdit)});
