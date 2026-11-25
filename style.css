@@ -416,3 +416,37 @@ input[type="file"]:not(:disabled)::file-selector-button:hover {background: var(-
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
+
+/* Site notes belong outside the travel diary. */
+.other-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 14px;
+  width: 100%;
+  padding: 13px 0;
+  text-align: start;
+  border-block: 1px solid var(--line);
+}
+.other-entry strong {font-size: 18px}
+.other-entry > span {color: var(--accent)}
+.other-entry small {color: var(--soft); font-size: 14px}
+.other-entry:hover strong {text-decoration: underline; text-underline-offset: .2em}
+.site-history {padding-block-end: 36px}
+.history-back {margin-block-end: 15px; color: var(--accent)}
+.history-intro {color: var(--soft); font-size: 14px}
+.site-history ol {padding: 0; margin: 12px 0 0; list-style: none}
+.site-history li {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 8px 16px;
+  padding: 17px 0;
+  border-block-start: 1px solid var(--line);
+}
+.site-history time {font-family: var(--mono); color: var(--soft); font-size: 12px}
+.site-history time span {display: block}
+.site-history h2 {font: 700 17px/1.45 var(--sans); margin-block-end: 5px}
+.site-history li p {color: var(--soft); font-size: 14px; line-height: 1.7}
+@media (max-width: 520px) {
+  .site-history li {grid-template-columns: minmax(0, 1fr); gap: 4px}
+  .site-history time span {display: inline; margin-inline-start: .45em}
+}

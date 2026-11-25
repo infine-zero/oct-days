@@ -175,10 +175,10 @@ function render() {
   if (!groups.has(state.day)) state.day = groups.keys().next().value;
   const records = groups.get(state.day);
   if (!records.some(item=>item.id===state.selected)) state.selected = records.find(item=>item.status==="confirmed")?.id || records[0]?.id || "";
-  activate("[data-page]", "page", state.page);
+  activate("[data-page]", "page", state.page==="history" ? "other" : state.page);
   activate("[data-mode]", "mode", state.mode);
   const headline = byId("headline");
-  const heading = ({people:"同行的人",places:"记忆里的地点",album:"旅途相册"})[state.page] || "Oct.Days";
+  const heading = ({people:"同行的人",places:"记忆里的地点",album:"旅途相册",other:"其他",history:"建站历史"})[state.page] || "Oct.Days";
   const isWordmark = state.page === "trip";
   if (headline.textContent !== heading || headline.classList.contains("wordmark") !== isWordmark) {
     headline.classList.toggle("wordmark", isWordmark);
@@ -197,7 +197,10 @@ function render() {
     byId("share").disabled = events.length===0;
   }
   byId("trip-view").hidden = state.page!=="trip";
-  byId("index-view").hidden = state.page==="trip";
+  const otherView = byId("other-view"), siteHistory = byId("site-history");
+  if (otherView) otherView.hidden = state.page!=="other";
+  if (siteHistory) siteHistory.hidden = state.page!=="history";
+  byId("index-view").hidden = !["people","places","album"].includes(state.page);
   const undated = byId("undated-shortcut");
   undated.hidden = false;
   const kiwiLabel = dayDetail ? "返回" : "某天";
@@ -207,6 +210,7 @@ function render() {
   undated.querySelector(".kiwi-label").textContent = kiwiLabel;
   journeyControl?.destroy();
   journeyControl = null;
+  if (["other","history"].includes(state.page)) return;
   if (state.page==="album") {paintAlbum(groups);return;}
   if (state.page!=="trip") {paintIndex();return;}
   const days = byId("days");
@@ -588,6 +592,18 @@ function startUI() {
   }
   byId("brand").addEventListener("click",e=>{e.preventDefault();showPage("trip")});
   document.querySelectorAll("[data-page]").forEach(node=>node.addEventListener("click",()=>showPage(node.dataset.page)));
+  const openHistory = byId("site-history-open");
+  const historyBack = byId("site-history-back");
+  openHistory?.addEventListener("click",()=>{
+    showPage("history");
+    window.scrollTo(0,0);
+    historyBack?.focus({preventScroll:true});
+  });
+  historyBack?.addEventListener("click",()=>{
+    showPage("other");
+    window.scrollTo(0,0);
+    openHistory?.focus({preventScroll:true});
+  });
   document.querySelectorAll("[data-mode]").forEach(node=>node.addEventListener("click",()=>{state.mode=node.dataset.mode;render();rememberDetail()}));
   byId("days").addEventListener("change",event=>selectDay(event.target.value));
   const undated = byId("undated-shortcut");
