@@ -141,14 +141,29 @@ h1 {font-size: clamp(30px, 5vw, 40px); font-weight: 750; margin: 0 0 8px; text-w
   z-index: 3;
   inset-inline-end: max(20px, env(safe-area-inset-right));
   inset-block-end: max(32px, env(safe-area-inset-bottom));
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: rgb(235 239 240 / 30%);
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 4px 6px;
   color: #f0f1f1;
   font-size: 13px;
 }
-.undated-shortcut:hover, .undated-shortcut[aria-pressed="true"] {background: rgb(235 239 240 / 35%)}
+.kiwi-bird {width: 56px; fill: currentColor; opacity: .56; overflow: visible}
+.undated-shortcut:hover .kiwi-bird, .undated-shortcut[aria-pressed="true"] .kiwi-bird {opacity: .76}
+.kiwi-foot {transform-box: fill-box; transform-origin: center top}
+.undated-shortcut.is-walking .kiwi-bird {animation: kiwi-walk .72s ease-in-out}
+.undated-shortcut.is-walking .kiwi-foot {animation: kiwi-step .24s ease-in-out 3}
+.undated-shortcut.is-walking .kiwi-foot-back {animation-direction: reverse}
+@keyframes kiwi-walk {
+  0%, 100% {transform: translate(0)}
+  22% {transform: translate(-5px, -2px)}
+  52% {transform: translate(-13px, 0)}
+  72% {transform: translate(-19px, -2px)}
+}
+@keyframes kiwi-step {
+  0%, 100% {transform: rotate(-17deg)}
+  50% {transform: rotate(17deg) translateY(-1px)}
+}
 .event:has(> .chapter-background) {position: relative; isolation: isolate}
 .chapter-background {
   position: absolute;

@@ -476,7 +476,14 @@ function startUI() {
   document.querySelectorAll("[data-page]").forEach(node=>node.addEventListener("click",()=>{state.page=node.dataset.page;render()}));
   document.querySelectorAll("[data-mode]").forEach(node=>node.addEventListener("click",()=>{state.mode=node.dataset.mode;render()}));
   byId("days").addEventListener("change",event=>selectDay(event.target.value));
-  byId("undated-shortcut").addEventListener("click",()=>{
+  const undated = byId("undated-shortcut");
+  const stopWalking = event => {
+    if (event.animationName === "kiwi-walk") undated.classList.remove("is-walking");
+  };
+  undated.addEventListener("animationend", stopWalking);
+  undated.addEventListener("animationcancel", stopWalking);
+  undated.addEventListener("click",()=>{
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) undated.classList.add("is-walking");
     state.page = "trip";
     selectDay(initialNote);
     byId("event-list").scrollIntoView({block:"start"});
