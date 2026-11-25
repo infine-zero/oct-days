@@ -355,32 +355,36 @@ input[type="file"]:not(:disabled)::file-selector-button:hover {background: var(-
   --control-hover: #ced7d2;
   --day-edge-size: max(100%, 600px) auto;
 }
-[data-theme="day"] body {position: relative; background: #fff}
+[data-theme="day"] body {
+  --day-tail-gap: clamp(36px, 6vw, 64px);
+  --day-wave-height: clamp(310px, 52vh, 570px);
+  position: relative;
+  padding-block-end: calc(var(--day-tail-gap) + var(--day-wave-height));
+  background: #fff;
+}
 [data-theme="day"] body::before,
 [data-theme="day"] body::after {
   position: absolute;
   inset: auto 0;
-  height: clamp(110px, 19vh, 185px);
-  /* Clip the photographed highlights back to white after applying edge grain. */
-  filter: blur(2.5px) saturate(.50) brightness(var(--day-edge-light)) contrast(1.12);
+  filter: blur(1.5px) saturate(.92);
   background-image: var(--background-grain), url("./coast-day.webp?v=paper-white-photo");
   background-size: 144px 144px, var(--day-edge-size);
   background-repeat: repeat, no-repeat;
   background-blend-mode: soft-light, normal;
 }
 [data-theme="day"] body::before {
-  --day-edge-light: 1.07;
   top: 0;
+  height: clamp(155px, 26vh, 285px);
   background-position: center, right top;
-  mask-image: linear-gradient(to bottom, #000 0%, #000 12%, transparent 96%);
-  opacity: .20;
+  mask-image: linear-gradient(to bottom, #000 0%, #000 10%, #0009 43%, transparent 94%);
+  opacity: .52;
 }
 [data-theme="day"] body::after {
-  --day-edge-light: 1.055;
   bottom: 0;
+  height: var(--day-wave-height);
   background-position: center, center bottom;
-  mask-image: linear-gradient(to top, #000 0%, #000 12%, transparent 96%);
-  opacity: .28;
+  mask-image: linear-gradient(to top, #000 0%, #000 35%, #000b 58%, transparent 100%);
+  opacity: .88;
 }
 [data-theme="day"] :is(.jj-map,.jj-explore) .jj-stage {background: #fff}
 [data-theme="day"] :is(.jj-map,.jj-explore) .jj-scenery {opacity: .60}
