@@ -140,15 +140,38 @@
   background: linear-gradient(180deg, #17332d24 10%, #122f2b40 30%, #102e29ec 100%);
   pointer-events: none;
 }
-.jj-film-caption {
+.jj-film-caption-shell {
   z-index: 1;
   position: absolute;
   bottom: 22px;
   left: clamp(18px, 3vw, 44px);
   right: 25px;
-  color: #fff8df;
   max-height: calc(100% - 75px);
+  display: flex;
+  flex-direction: column;
+}
+.jj-film-caption {
+  min-block-size: 0;
   overflow: auto;
+  scrollbar-width: none;
+}
+.jj-film-caption::-webkit-scrollbar {display: none}
+.jj-film-scroll-track {
+  position: absolute;
+  inset-block: 8px;
+  inset-inline-start: 5px;
+  inline-size: 2.5px;
+  border-radius: 2px;
+  background: var(--film-line-bg, var(--film-line-fallback));
+  background: color-mix(in srgb, var(--film-line-bg, var(--film-line-fallback)) 76%, transparent);
+  pointer-events: none;
+}
+.jj-film-scroll-thumb {
+  display: block;
+  inline-size: 100%;
+  border-radius: inherit;
+  background: var(--film-line-ink, #000);
+  background: color-mix(in srgb, var(--film-line-ink, #000) 70%, transparent);
 }
 .jj-film-caption small { font-size: 12px; letter-spacing: .08em; color: #e0e7cf; }
 .jj-film-caption h3 {
@@ -162,7 +185,7 @@
   overflow-wrap: anywhere;
 }
 .jj-film-caption p { margin: 5px 0 0; font-size: 14px; overflow-wrap: anywhere; }
-.jj-film .jj-map-meta { z-index: 2; }
+.jj-film .jj-map-meta {z-index: 2; pointer-events: none}
 .jj-film-photo {
   position: absolute;
   inset: 0;
@@ -171,16 +194,17 @@
   height: 100%;
   object-fit: cover;
 }
-.jj-journey .jj-film-open {
+.jj-journey .jj-film-photo-trigger {
   position: absolute;
-  z-index: 2;
-  right: 13px;
-  top: 11px;
-  padding: 6px 11px;
-  color: #fff9e9;
-  background: #263c2dd9;
-  font-size: 12px;
+  inset: 0;
+  display: block;
+  inline-size: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
 }
+.jj-journey .jj-film-photo-trigger:focus-visible {outline-offset: -5px}
 .jj-journey [hidden] { display: none !important; }
 .jj-journey {
   --jj-ink: var(--ink);
@@ -203,11 +227,8 @@
 .jj-node[aria-current="step"] .jj-node-dot { background: var(--warm); }
 .jj-footer { background: var(--white); border-color: var(--line); }
 .jj-film .jj-stage::after { background: none; }
-.jj-film-caption {
-  width: fit-content;
-  max-width: calc(100% - 44px);
-  padding: 10px 16px;
-}
+.jj-film-caption-shell {width: fit-content; max-width: calc(100% - 44px)}
+.jj-film-caption {padding: 10px 16px}
 @media (max-width: 550px) {
   .jj-stage { height: 242px; }
   .jj-footer { gap: 7px; padding: 8px; }
@@ -235,9 +256,8 @@
 .jj-journey .jj-action {min-width: 52px; background-color: var(--control); color: var(--ink)}
 .jj-journey .jj-action:hover {background-color: var(--control-hover)}
 .jj-node-dot {background: var(--island); border-color: var(--route); box-shadow: none}
-.jj-film-caption {--film-line-fallback: #fff; color: var(--ink)}
-[data-theme="day"] .jj-film-caption {--film-line-fallback: #e9ecee}
-.jj-journey .jj-film-open {background: var(--deep-sea); color: var(--ink)}
+.jj-film-caption-shell {--film-line-fallback: #fff; color: var(--ink)}
+[data-theme="day"] .jj-film-caption-shell {--film-line-fallback: #e9ecee}
 .jj-film-caption > * {white-space: pre-line}
 .jj-film-line {
   background: var(--film-line-bg, var(--film-line-fallback));

@@ -484,10 +484,6 @@ input[type="file"]:not(:disabled)::file-selector-button:hover {background: var(-
   border-color: #fff;
   box-shadow: 0 0 0 1px var(--accent);
 }
-[data-theme="day"] .jj-journey .jj-film-open {
-  background: #fff;
-  box-shadow: 0 0 0 1px var(--line);
-}
 [data-theme="day"] input, [data-theme="day"] select, [data-theme="day"] textarea {background: #fff}
 [data-theme="day"] .chapter select {background: transparent}
 [data-theme="day"] .chapter-background {color: #e1e6e3}

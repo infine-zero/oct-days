@@ -237,15 +237,28 @@
     }
     const empty = el("span","jj-empty-note","这一天的路线，等第一条记忆来点亮");
     empty.hidden = records.length > 0;
+    const captionShell = el("div","jj-film-caption-shell");
     const caption = el("div","jj-film-caption");
-    caption.hidden = mode !== "film" || !records.length;
+    const scrollTrack = el("div","jj-film-scroll-track");
+    const scrollThumb = el("span","jj-film-scroll-thumb");
+    scrollTrack.hidden=true;scrollTrack.setAttribute("aria-hidden","true");
+    scrollTrack.append(scrollThumb);
+    captionShell.append(caption,scrollTrack);
+    captionShell.hidden = mode !== "film" || !records.length;
+    caption.setAttribute("role","region");
+    caption.setAttribute("aria-label","放映文字");
+    let captionStep=-1;
     const filmTime = el("small"), filmTitle = el("h3"), filmNote = el("p");
     const filmCompanions = el("small","entry-companions"), filmAuthor = el("small","entry-author");
     let filmPhoto = el("img","jj-film-photo"), filmURL = null, paletteFrame = 0;
     filmPhoto.alt="";filmPhoto.hidden=true;
-    const viewPhotos = el("button","jj-film-open");
-    viewPhotos.type="button";viewPhotos.hidden=true;
-    viewPhotos.addEventListener("click",()=>{
+    const photoTrigger = el("button","jj-film-photo-trigger");
+    photoTrigger.type="button";photoTrigger.hidden=true;
+    photoTrigger.setAttribute("aria-label","查看放映照片");
+    photoTrigger.append(filmPhoto);
+    photoTrigger.addEventListener("click",()=>{
+      if (photoTrigger.hidden) return;
+      photoTrigger.focus({preventScroll:true});
       pause();sync();window.JournalPhotos?.open(records[current],0);
     });
     const filmRows = [filmTime,filmTitle,filmCompanions,filmNote,filmAuthor];
@@ -255,7 +268,7 @@
       caption.append(row);
       return line;
     });
-    stage.append(scenery,filmPhoto,cast,markers,meta,empty,caption,viewPhotos);
+    stage.append(scenery,photoTrigger,cast,markers,meta,empty,captionShell);
     const footer = el("div","jj-footer");
     const play = el("button","jj-action","播放");
     play.type = "button";
@@ -272,9 +285,29 @@
     footer.append(play,range,timeText); footer.hidden = !records.length && !hasNextDay;
     root.append(stage,footer);container.replaceChildren(root);
 
+    function syncFilmScroll() {
+      if (disposed || captionShell.hidden) return;
+      const room=caption.scrollHeight-caption.clientHeight;
+      scrollTrack.hidden=room<=1;
+      if (scrollTrack.hidden) {
+        caption.removeAttribute("tabindex");
+        return;
+      }
+      caption.tabIndex=0;
+      const rail=scrollTrack.clientHeight;
+      const size=Math.min(rail,Math.max(12,rail*caption.clientHeight/caption.scrollHeight));
+      const progress=Math.max(0,Math.min(1,caption.scrollTop/room));
+      scrollThumb.style.blockSize=size+"px";
+      scrollThumb.style.transform=`translateY(${progress*(rail-size)}px)`;
+    }
+    if (mode==="film") {
+      caption.addEventListener("scroll",syncFilmScroll,{passive:true});
+      document.fonts?.ready.then(syncFilmScroll);
+    }
+
     function clearFilmColor() {
-      caption.style.removeProperty("--film-line-bg");
-      caption.style.removeProperty("--film-line-ink");
+      captionShell.style.removeProperty("--film-line-bg");
+      captionShell.style.removeProperty("--film-line-ink");
     }
     function scheduleFilmColor(image) {
       cancelAnimationFrame(paletteFrame);
@@ -282,8 +315,8 @@
         if (disposed || image!==filmPhoto || image.hidden) return;
         const palette=filmColor(image,width,height,document.documentElement.dataset.theme==="day");
         if (palette) {
-          caption.style.setProperty("--film-line-bg",palette.bg);
-          caption.style.setProperty("--film-line-ink",palette.ink);
+          captionShell.style.setProperty("--film-line-bg",palette.bg);
+          captionShell.style.setProperty("--film-line-ink",palette.ink);
         } else clearFilmColor();
       });
     }
@@ -292,6 +325,7 @@
       filmURL=url;
       cancelAnimationFrame(paletteFrame);
       clearFilmColor();
+      photoTrigger.hidden=true;
       const image=el("img","jj-film-photo");
       image.alt="";image.hidden=true;
       filmPhoto.replaceWith(image);
@@ -301,6 +335,7 @@
       image.onload=()=>{
         if (disposed || image!==filmPhoto) return;
         image.hidden=false;
+        photoTrigger.hidden=false;
         scheduleFilmColor(image);
       };
       image.onerror=()=>{
@@ -421,10 +456,13 @@
         filmRows[i].hidden = !value;
       });
       if(mode==="film") {
+        if (captionStep!==current) {
+          captionStep=current;
+          caption.scrollTop=0;
+        }
+        syncFilmScroll();
         const imageUrl=window.JournalPhotos?.url(record.photos?.[0]) || "";
         showFilmPhoto(imageUrl);
-        viewPhotos.hidden=!imageUrl;
-        if(imageUrl)viewPhotos.textContent="查看照片 · "+record.photos.length;
       }
     }
     function resize(){
