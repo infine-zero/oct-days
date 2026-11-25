@@ -198,13 +198,16 @@ h1 {font-size: clamp(30px, 5vw, 40px); font-weight: 750; margin: 0 0 8px; text-w
   z-index: -1;
   inset: auto 6px 3px auto;
   max-inline-size: calc(100% - 12px);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: #edf1f17a;
-  font-size: 18px;
-  line-height: 1;
+  margin-block-start: 0;
+  text-align: end;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  color: #edf1f13e;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
   pointer-events: none;
+  user-select: none;
 }
 .event:has(> .entry-photos:not([hidden])) {
   --entry-photo-width: clamp(98px, 26vw, 176px);
@@ -402,7 +405,7 @@ input[type="file"]:not(:disabled)::file-selector-button:hover {background: var(-
 [data-theme="day"] input, [data-theme="day"] select, [data-theme="day"] textarea {background: #fff}
 [data-theme="day"] .chapter select {background: transparent}
 [data-theme="day"] .chapter-background {color: #e1e6e3}
-[data-theme="day"] .details > .entry-author {color: #65706a}
+[data-theme="day"] .details > .entry-author {color: #65706a4d}
 [data-theme="day"] .undated-shortcut {color: #53635b}
 [data-theme="day"] .kiwi-bird path {opacity: .92}
 [data-theme="day"] .jp-viewer::backdrop,
