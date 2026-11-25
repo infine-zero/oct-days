@@ -291,18 +291,23 @@ function paintIndex() {
   const isPeople = state.page==="people";
   const groups = new Map();
   for (const records of groupDays().values()) for (const entry of records) {
-    for (const name of (isPeople ? entry.people : [entry.place]).filter(Boolean)) {
+    const names = isPeople ? new Set([entry.author, ...entry.people].filter(Boolean)) : [entry.place].filter(Boolean);
+    for (const name of names) {
       if (!groups.has(name)) groups.set(name,[]);
       groups.get(name).push(entry);
     }
   }
   target.replaceChildren();
-  if (!groups.size) target.append(make("p","section-placeholder",isPeople?"手记里填写同行人的名字，就能在这里看到每个人参与的片段。":"手记里填写地点，就能在这里找到每次到访的经过。"));
+  if (!groups.size) target.append(make("p","section-placeholder",isPeople?"手记里填写署名或同行人，就能在这里找到对应的手记。":"手记里填写地点，就能在这里找到每次到访的经过。"));
   for (const [name,records] of groups) {
     const group=make("article","group");
     group.append(make("h2","",name));
     for (const entry of records) {
-      const open=button("","group-link",()=>openRecord(dayKey(entry.day), entry.id));
+      const open=button("","group-link",()=>{
+        const day = dayKey(entry.day);
+        if (isPeople) openDayDetail(day, entry.id);
+        else openRecord(day, entry.id);
+      });
       open.append(make("strong","",entry.event));
       appendCompanions(open, entry);
       open.append(make("span","metadata",dayLabel(dayKey(entry.day))+" · "+(entry.time||"时间待补")+" · "+statusNames[entry.status]));
@@ -701,21 +706,19 @@ async function requestPublicSnapshot(url, repository, ms) {
 }
 async function loadPublicSnapshot({pages, repository}, fallback) {
   const key = "oct-days-public-snapshot:"+pages.pathname;
-  try {
-    // Pages can reuse a CDN response regardless of its query string.
-    const data = await requestPublicSnapshot(repository, true, 3500);
-    try { sessionStorage.setItem(key, JSON.stringify(data)); } catch {}
-    return {data, fresh:true};
-  } catch {
-    let previous, published;
-    try { previous = JSON.parse(sessionStorage.getItem(key)); } catch {}
-    if (!isPublicSnapshot(previous)) {
-      pages.search = "";
-      try { published = await requestPublicSnapshot(pages, false, 2500); } catch {}
-    }
-    const data = [previous, published, fallback].find(isPublicSnapshot);
-    return {data:data || {version:1, tripStart:"", events:[]}, fresh:false, hasSnapshot:!!data};
+  // Prefer the public repository, but a healthy Pages response is also online data.
+  const pagesURL = new URL(pages.pathname, pages.origin);
+  for (const [url, fromRepository, deadline] of [[repository, true, 3500], [pagesURL, false, 2500]]) {
+    try {
+      const data = await requestPublicSnapshot(url, fromRepository, deadline);
+      try { sessionStorage.setItem(key, JSON.stringify(data)); } catch {}
+      return {data, fresh:true};
+    } catch {}
   }
+  let previous;
+  try { previous = JSON.parse(sessionStorage.getItem(key)); } catch {}
+  const data = [previous, fallback].find(isPublicSnapshot);
+  return {data:data || {version:1, tripStart:"", events:[]}, fresh:false, hasSnapshot:!!data};
 }
 async function init() {
   try {
