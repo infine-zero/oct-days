@@ -106,7 +106,7 @@ window.TRAVEL_SHARE={
       "photos": [
         "f65a61b8272e4b4c64e0c7dfc20317ca9e624cefa13172f8984d93eeaf260b00.jpg"
       ],
-      "author": ""
+      "author": "kiwi"
     },
     {
       "id": "inbox-bacf03ffe43f619ffd3cc8be",
