@@ -344,8 +344,9 @@ input[type="file"]:not(:disabled)::file-selector-button:hover {background: var(-
   --line: #858e89;
   --accent: #29453f;
   --mist: #f2f4f3;
-  --sea: #c6d1cd;
-  --shore: #a8b8b1;
+  --map-paper: #fff;
+  --sea: #e5ebe8;
+  --shore: #d4ded8;
   --island: #788b81;
   --route: #4b6258;
   --warm: #465e52;
@@ -354,25 +355,29 @@ input[type="file"]:not(:disabled)::file-selector-button:hover {background: var(-
   --control-hover: #ced7d2;
   --day-edge-size: max(100%, 600px) auto;
 }
-[data-theme="day"] body {background: #fff}
+[data-theme="day"] body {position: relative; background: #fff}
 [data-theme="day"] body::before,
 [data-theme="day"] body::after {
-  inset: auto -5px;
-  height: clamp(110px, 22vh, 205px);
-  filter: blur(2.5px) saturate(.50);
-  background-image: var(--background-grain), url("./coast-day.webp");
+  position: absolute;
+  inset: auto 0;
+  height: clamp(110px, 19vh, 185px);
+  /* Clip the photographed highlights back to white after applying edge grain. */
+  filter: blur(2.5px) saturate(.50) brightness(var(--day-edge-light)) contrast(1.12);
+  background-image: var(--background-grain), url("./coast-day.webp?v=paper-white-photo");
   background-size: 144px 144px, var(--day-edge-size);
   background-repeat: repeat, no-repeat;
   background-blend-mode: soft-light, normal;
 }
 [data-theme="day"] body::before {
-  top: -5px;
+  --day-edge-light: 1.07;
+  top: 0;
   background-position: center, right top;
   mask-image: linear-gradient(to bottom, #000 0%, #000 12%, transparent 96%);
   opacity: .20;
 }
 [data-theme="day"] body::after {
-  bottom: -5px;
+  --day-edge-light: 1.055;
+  bottom: 0;
   background-position: center, center bottom;
   mask-image: linear-gradient(to top, #000 0%, #000 12%, transparent 96%);
   opacity: .28;

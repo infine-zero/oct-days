@@ -48,7 +48,7 @@
   function landscape(ctx, width, height, tones) {
     ctx.save();
     ctx.scale(width / 960, height / 330);
-    ctx.fillStyle = tones.mist;
+    ctx.fillStyle = tones["map-paper"] || tones.mist;
     ctx.fillRect(0, 0, 960, 330);
 
     // A distant island and flat bands of sea and sand leave room for the route.
@@ -68,7 +68,7 @@
     mounts.get(container)?.destroy();
     const theme = getComputedStyle(container);
     const tones = {};
-    for (const name of ["mist", "sun", "island", "sea", "shore", "route", "warm", "accent"]) {
+    for (const name of ["map-paper", "mist", "sun", "island", "sea", "shore", "route", "warm", "accent"]) {
       tones[name] = theme.getPropertyValue("--" + name).trim();
     }
     const records = Array.isArray(entries) ? entries : [];
