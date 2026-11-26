@@ -40,9 +40,43 @@ function dayLabel(day) {
   if (day !== "第1天") return day;
   return !state.demo && state.tripStart ? state.tripStart.slice(5).replace("-", ".") : "10.01";
 }
+// A single allowlist for the live index and the same component in private previews.
+const personAliases = new Map([
+  ["有机酸","有机酸"], ["酸","有机酸"],
+  ["sharpelonde","londe"], ["londe","londe"],
+]);
+const aliasKey = name => name.normalize("NFKC").replace(/\s+/gu,"").toLowerCase();
+const personIdentity = name => personAliases.get(aliasKey(name)) || name;
+function peopleLabels(names) {
+  return names.flatMap(name=>{
+    if (personAliases.has(aliasKey(name))) return [name];
+    // Imports sometimes store a space-separated list as one field. Only split
+    // when there are at least two explicit, recognized tokens; don't infer names.
+    const tokens = name.trim().split(/\s+/u);
+    const known = token => personAliases.has(aliasKey(token));
+    if (tokens.filter(known).length < 2) return [name];
+    const labels = [];
+    let untouched = [];
+    for (const token of tokens) {
+      if (!known(token)) {untouched.push(token);continue;}
+      if (untouched.length) labels.push(untouched.join(" "));
+      untouched = [];
+      labels.push(token);
+    }
+    if (untouched.length) labels.push(untouched.join(" "));
+    return labels;
+  });
+}
 function partyNames(entry) {
-  if (!entry.people.some(name => name !== entry.author)) return "";
-  return [...new Set([entry.author, ...entry.people].filter(Boolean))].join("、");
+  const primary = entry.author ? personIdentity(entry.author) : "";
+  const representatives = new Map();
+  if (primary) representatives.set(primary, entry.author);
+  for (const name of peopleLabels(entry.people)) {
+    if (!name) continue;
+    const key = personIdentity(name);
+    if (!representatives.has(key)) representatives.set(key,name);
+  }
+  return representatives.size > (primary ? 1 : 0) ? [...representatives.values()].join("、") : "";
 }
 function appendCompanions(container, entry) {
   const names = partyNames(entry);
@@ -328,8 +362,8 @@ function paintIndex() {
   const authorsOnly = isPeople && state.peopleView === "authors";
   const groups = new Map();
   for (const records of groupDays().values()) for (const entry of records) {
-    const names = authorsOnly ? [entry.author].filter(Boolean)
-      : isPeople ? new Set([entry.author, ...entry.people].filter(Boolean))
+    const names = authorsOnly ? [entry.author].filter(Boolean).map(personIdentity)
+      : isPeople ? new Set([entry.author, ...peopleLabels(entry.people)].filter(Boolean).map(personIdentity))
       : [readerField(entry.place)].filter(Boolean);
     for (const name of names) {
       if (!groups.has(name)) groups.set(name,[]);
