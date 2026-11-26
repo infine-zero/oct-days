@@ -17,7 +17,7 @@ function button(label, className, onClick) {
 let shared = window.TRAVEL_SHARE;
 let sampleEvents = [];
 const statusNames = {confirmed:"确认经历", planned:"计划", pending:"待确认"};
-const state = {events:[], tripStart:"", demo:false, page:"trip", peopleView:"companions", mode:"map", day:"", selected:"", drafts:[], original:null, loaded:false};
+const state = {events:[], tripStart:"", demo:false, page:"trip", peopleView:"companions", authorFilter:"", mode:"map", day:"", selected:"", drafts:[], original:null, loaded:false};
 let journeyControl = null;
 let materialDraft = null;
 let openingEdit = false;
@@ -128,7 +128,7 @@ function activate(selector, key, value) {
   });
 }
 function captureView() {
-  return {page:state.page, peopleView:state.peopleView, mode:state.mode, day:state.day, selected:state.selected, scrollY:window.scrollY};
+  return {page:state.page, peopleView:state.peopleView, authorFilter:state.authorFilter, mode:state.mode, day:state.day, selected:state.selected, scrollY:window.scrollY};
 }
 function writeView(method, detail, hasSource, url = location.href) {
   history[method]({...history.state, [viewStateKey]:{detail, hasSource, view:captureView()}}, "", url);
@@ -159,6 +159,7 @@ function restoreView(route) {
     : ["people","places","album"].includes(view?.page) ? view.page : "trip";
   state.mode = view?.mode || "map";
   state.peopleView = view?.peopleView === "authors" ? "authors" : "companions";
+  state.authorFilter = view?.authorFilter || "";
   state.day = direct ?? view?.day ?? "";
   state.selected = !dayDetail || view?.day === direct ? view?.selected || "" : "";
   render();
@@ -356,6 +357,43 @@ function paintAlbum(groups) {
   }
   if (!target.childElementCount) target.append(make("p","section-placeholder",shared?"这份分享手账没有附带照片。":"在“记一件事”或已有手记的“编辑”里添加照片，就能在这里翻看。"));
 }
+// Count body prose only: Han characters individually; other letter/number runs as words.
+function noteLength(text) {
+  return (text || "").replace(/(\p{Script=Han})/gu," $1 ")
+    .match(/[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:['’\-][\p{L}\p{N}][\p{L}\p{M}\p{N}]*)*/gu)?.length || 0;
+}
+const publishedClock = new Intl.DateTimeFormat("zh-CN", {
+  timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23",
+});
+function notePublishedTime(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value)) return null;
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0,19) !== value.slice(0,19)) return null;
+  const parts = Object.fromEntries(publishedClock.formatToParts(date).map(({type,value})=>[type,value]));
+  const time = make("time","author-published",parts.year+"."+parts.month+"."+parts.day+" "+parts.hour+":"+parts.minute);
+  time.dateTime=value;
+  time.title="公开发布时间（北京时间）";
+  time.setAttribute("aria-label",time.title+" "+time.textContent);
+  return time;
+}
+function addAuthorSelector(target, groups) {
+  if (state.authorFilter && !groups.has(state.authorFilter)) state.authorFilter="";
+  const filters=make("div","author-filters");
+  filters.setAttribute("role","group");
+  filters.setAttribute("aria-label","按作者筛选");
+  for (const [key,label] of [["","全部"],...[...groups.keys()].map(name=>[name,name])]) {
+    const control=button(label,"author-filter",()=>{
+      if (state.authorFilter===key) return;
+      state.authorFilter=key;
+      paintIndex();
+      [...target.querySelectorAll(".author-filter")].find(node=>node.dataset.author===key)?.focus({preventScroll:true});
+    });
+    control.dataset.author=key;
+    control.setAttribute("aria-pressed",String(state.authorFilter===key));
+    filters.append(control);
+  }
+  target.append(filters);
+}
 function paintIndex() {
   const target = byId("index-list");
   const isPeople = state.page==="people";
@@ -372,18 +410,35 @@ function paintIndex() {
   }
   target.replaceChildren();
   if (!groups.size) target.append(make("p","section-placeholder",authorsOnly?"手记有署名后，就能在这里找到作者的作品。":isPeople?"手记里填写署名或同行人，就能在这里找到对应的手记。":"手记里填写地点，就能在这里找到每次到访的经过。"));
+  if (authorsOnly && groups.size) addAuthorSelector(target, groups);
   for (const [name,records] of groups) {
-    const group=make("article","group");
-    group.append(make("h2","",name));
+    if (authorsOnly && state.authorFilter && name!==state.authorFilter) continue;
+    const group=make("article",authorsOnly ? "group author-notes" : "group");
+    const heading=make("h2","",name);
+    if (authorsOnly) {
+      const total=records.reduce((sum,entry)=>sum+noteLength(entry.reflection),0);
+      const header=make("header","author-summary");
+      header.append(heading,make("span","author-totals",records.length+" 篇 · "+total+" 字"));
+      group.append(header);
+    } else group.append(heading);
     for (const entry of records) {
       const open=button("","group-link",()=>{
         const day = dayKey(entry.day);
         if (isPeople) openDayDetail(day, entry.id);
         else openRecord(day, entry.id);
       });
-      open.append(make("strong","",entry.event));
-      appendCompanions(open, entry);
-      appendReaderMeta(open,[dayLabel(dayKey(entry.day)),readerField(entry.time),readerStatus(entry)]);
+      const text=authorsOnly ? make("span","author-work-text") : open;
+      text.append(make("strong","",entry.event));
+      appendCompanions(text, entry);
+      appendReaderMeta(text,[dayLabel(dayKey(entry.day)),readerField(entry.time),readerStatus(entry)]);
+      if (authorsOnly) {
+        open.classList.add("author-work");
+        const info=make("span","author-work-info");
+        const published=notePublishedTime(entry.publishedAt);
+        if (published) info.append(published);
+        info.append(make("span","author-word-count",noteLength(entry.reflection)+" 字"));
+        open.append(text,info);
+      }
       group.append(open);
     }
     target.append(group);

@@ -16,7 +16,8 @@ window.TRAVEL_SHARE={
       "photos": [
         "68a86058b06d526c67e74a2c46fdee3e37b7ea70e15715f7cdf142765706ba4b.jpg"
       ],
-      "author": "kiwi"
+      "author": "kiwi",
+      "publishedAt": "2026-11-24T14:04:57Z"
     },
     {
       "id": "oct01-yakitori",
@@ -31,7 +32,8 @@ window.TRAVEL_SHARE={
         "有机酸"
       ],
       "photos": [],
-      "author": "kiwi"
+      "author": "kiwi",
+      "publishedAt": "2026-11-24T14:04:57Z"
     },
     {
       "id": "oct02-morning",
@@ -46,7 +48,8 @@ window.TRAVEL_SHARE={
         "有机酸"
       ],
       "photos": [],
-      "author": "kiwi"
+      "author": "kiwi",
+      "publishedAt": "2026-11-24T14:04:57Z"
     },
     {
       "id": "oct02-night",
@@ -61,7 +64,8 @@ window.TRAVEL_SHARE={
         "有机酸"
       ],
       "photos": [],
-      "author": "kiwi"
+      "author": "kiwi",
+      "publishedAt": "2026-11-24T14:04:57Z"
     },
     {
       "id": "oct03-evening",
@@ -78,7 +82,8 @@ window.TRAVEL_SHARE={
       "photos": [
         "3add759a2adf704f445ad382e221f8e28bcd37c6a942f540c1ef46c9134d095f.jpg"
       ],
-      "author": "kiwi"
+      "author": "kiwi",
+      "publishedAt": "2026-11-24T14:04:57Z"
     },
     {
       "id": "inbox-1e73f99490f3a5c1a5602b97",
@@ -92,7 +97,8 @@ window.TRAVEL_SHARE={
       "photos": [
         "32c36f2beb5281ad7815c3cfe60f4608451e94bf5a449814431a4a2130ec000b.jpg"
       ],
-      "author": ""
+      "author": "",
+      "publishedAt": "2026-11-25T05:03:28Z"
     },
     {
       "id": "inbox-2a4785b73afd2b15a3efd499",
@@ -106,7 +112,8 @@ window.TRAVEL_SHARE={
       "photos": [
         "f65a61b8272e4b4c64e0c7dfc20317ca9e624cefa13172f8984d93eeaf260b00.jpg"
       ],
-      "author": "kiwi"
+      "author": "kiwi",
+      "publishedAt": "2026-11-25T11:16:31Z"
     },
     {
       "id": "inbox-bacf03ffe43f619ffd3cc8be",
@@ -120,7 +127,8 @@ window.TRAVEL_SHARE={
       "photos": [
         "ac4610e9c558fbd6aa41382636c60e0853696a1eb586ebdd537209bdc44e8dfc.jpg"
       ],
-      "author": "云"
+      "author": "云",
+      "publishedAt": "2026-11-25T11:37:51Z"
     },
     {
       "id": "inbox-b5582019c2c4fa103271f340",
@@ -135,7 +143,8 @@ window.TRAVEL_SHARE={
         "c757c37604e3dc86ba748e7c32dac964acb22583e86b32acae68f2596f63daf7.jpg",
         "414d316d710f633d54a74871cc3b60c73acc1b58825f8a192f6e7b7e4527a9b4.jpg"
       ],
-      "author": "Londe"
+      "author": "Londe",
+      "publishedAt": "2026-11-25T16:45:04Z"
     },
     {
       "id": "inbox-17c6cbbb6674b2ac129b43d8",
@@ -149,7 +158,8 @@ window.TRAVEL_SHARE={
       "photos": [
         "1a4f4a34a6abadeee864b7244efd2fc4bcf711f0edd0ee6cfb1310688c123d29.jpg"
       ],
-      "author": "Londe"
+      "author": "Londe",
+      "publishedAt": "2026-11-25T17:18:55Z"
     },
     {
       "id": "inbox-4a260c609932349d4e7e0d6e",
@@ -167,7 +177,8 @@ window.TRAVEL_SHARE={
         "7c5a282cc0cf6244dbef5654a7b9e52de9c28ba0e4beba96f718b422bce2d27d.jpg",
         "d0e605ef1bfe4cceae54599614a03b48ed352582d2db211187d55ca5629ef475.jpg"
       ],
-      "author": "kiwi"
+      "author": "kiwi",
+      "publishedAt": "2026-11-26T04:33:53Z"
     },
     {
       "id": "inbox-18824c852c86212d724ac13b",
@@ -185,7 +196,8 @@ window.TRAVEL_SHARE={
         "02b76497248a7881b98093e2ef2917eee1fb8dadbfbd1d9951c6ea168bef3710.jpg",
         "88056b08ad52229a83bd66dbbf1badd4cf735d28cb7d7595244594057d473850.jpg"
       ],
-      "author": "kiwi"
+      "author": "kiwi",
+      "publishedAt": "2026-11-26T05:07:14Z"
     }
   ],
   "demo": false

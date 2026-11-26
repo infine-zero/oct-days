@@ -346,6 +346,45 @@ h1 {font-size: clamp(30px, 5vw, 40px); font-weight: 750; margin: 0 0 8px; text-w
 .group {border: 0; border-radius: 0; padding: 0 0 14px}
 .group h2 {font-size: 16px; margin-bottom: 8px}
 .group .group-link {border: 0; padding: 9px 0}
+.author-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 14px;
+}
+.author-filter {padding: 5px 0; min-block-size: 36px; color: var(--soft); font-size: 13px}
+.author-filter[aria-pressed="true"] {color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: .27em}
+.author-summary, .author-notes .author-work {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 5px 12px;
+}
+.author-summary {margin-block-end: -1px}
+.author-summary h2 {
+  margin: 0;
+  color: var(--soft);
+  color: color-mix(in srgb, var(--soft) 62%, var(--paper));
+  font-size: clamp(34px, 7vw, 50px);
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+.author-notes .author-work {padding: 4px 0 7px}
+.author-summary + .author-work {padding-block-start: 0}
+.author-work-text {min-inline-size: 0; overflow-wrap: anywhere}
+.author-work-info, .author-totals {
+  color: var(--soft);
+  text-align: end;
+  font-size: 12px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+.author-work-info {display: grid; justify-items: end; gap: 1px}
+.author-published {white-space: nowrap}
+@media (max-width: 390px) {
+  .author-summary, .author-notes .author-work {column-gap: 8px}
+  .author-work-info, .author-totals {font-size: 11px}
+}
 #index-list {display: flex; flex-direction: column; gap: 22px}
 .section-placeholder {border: 0; padding: 14px 0}
 .draft {border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 12px 0 8px}
