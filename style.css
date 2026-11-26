@@ -360,6 +360,11 @@ h1 {font-size: clamp(30px, 5vw, 40px); font-weight: 750; margin: 0 0 8px; text-w
   align-items: center;
   gap: 5px 12px;
 }
+/* Extend only the author results gutter, keeping the reading column anchored. */
+.author-notes {align-self: stretch; margin-inline-end: -4px}
+@media (min-width: 700px) {
+  .author-notes {margin-inline-end: clamp(-76px, calc(116.667px - 16.667vw), -4px)}
+}
 .author-summary {margin-block-end: -1px}
 .author-summary h2 {
   margin: 0;
@@ -369,11 +374,12 @@ h1 {font-size: clamp(30px, 5vw, 40px); font-weight: 750; margin: 0 0 8px; text-w
   line-height: 1.12;
   overflow-wrap: anywhere;
 }
-.author-notes .author-work {padding: 4px 0 7px}
+.author-notes .author-work {inline-size: 100%; margin-inline: 0; padding: 4px 0 7px}
 .author-summary + .author-work {padding-block-start: 0}
 .author-work-text {min-inline-size: 0; overflow-wrap: anywhere}
 .author-work-info, .author-totals {
   color: var(--soft);
+  justify-self: end;
   text-align: end;
   font-size: 12px;
   line-height: 1.45;

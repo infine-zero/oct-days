@@ -88,7 +88,16 @@ function readerField(value) {
   return /^(?:(?:时间|时段|地点|日期|事件)\s*)?待补$/.test(text) ? "" : text;
 }
 function readerEntry(entry) {
-  return {...entry,day:dayLabel(dayKey(entry.day)),time:readerField(entry.time),place:readerField(entry.place)};
+  const day=dayKey(entry.day);
+  return {...entry,day:dayLabel(day),time:readerField(entry.time),place:readerField(entry.place),
+    openNote:()=>revealPhotoNote(day,entry.id)};
+}
+function revealPhotoNote(day,id) {
+  if (state.page!=="trip" || state.day!==day || state.selected!==id) openDayDetail(day,id);
+  const row=document.querySelector("#event-list .event.is-selected");
+  row?.scrollIntoView({block:"start"});
+  row?.querySelector(".record-main")?.focus({preventScroll:true});
+  rememberDetail();
 }
 function readerStatus(entry) {
   return entry.status === "confirmed" ? "" : statusNames[entry.status];
@@ -346,16 +355,22 @@ function paintList(records) {
 }
 function paintAlbum(groups) {
   const target=byId("index-list");target.replaceChildren();
-  for (const [day,entries] of groups) for (const entry of entries) {
-    if (!entry.photos?.length) continue;
-    const card=make("article","group album-group");
-    card.append(make("p","metadata",[dayLabel(day),readerField(entry.time),readerField(entry.place)].filter(Boolean).join(" · ")),make("h2","",entry.event));
-    appendCompanions(card, entry);
-    card.append(window.JournalPhotos.gallery(readerEntry(entry)));
-    card.append(button("回到这条手记","quiet",()=>openRecord(day, entry.id)));
-    target.append(card);
+  const frames=[], sections=[];
+  for (const [day,entries] of groups) {
+    const start=frames.length;
+    for (const record of entries) {
+      const entry=readerEntry(record);
+      for (const key of entry.photos || []) {
+        if (window.JournalPhotos.url(key)) frames.push({key,entry});
+      }
+    }
+    if (frames.length>start) sections.push({label:dayLabel(day),start,end:frames.length});
   }
-  if (!target.childElementCount) target.append(make("p","section-placeholder",shared?"这份分享手账没有附带照片。":"在“记一件事”或已有手记的“编辑”里添加照片，就能在这里翻看。"));
+  for (const {label,start,end} of sections) {
+    const section=make("section","album-day");
+    section.append(make("h2","",label),window.JournalPhotos.album(frames,start,end));
+    target.append(section);
+  }
 }
 // Count body prose only: Han characters individually; other letter/number runs as words.
 function noteLength(text) {

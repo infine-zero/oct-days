@@ -70,6 +70,33 @@
   background: var(--deep-sea);
   font: 18px/1 system-ui, sans-serif;
 }
+.album-day {align-self: stretch; min-inline-size: 0}
+.album-day h2 {font-size: 20px; font-weight: 700; line-height: 1; margin-block: 0 -1px; color: #c4c4c4}
+[data-theme="day"] .album-day h2 {color: #818181}
+.jp-album {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 10px;
+}
+.jp-album-place {
+  position: absolute;
+  inset: auto auto 2px 2px;
+  max-width: calc(100% - 4px);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  background: transparent;
+  color: var(--album-photo-ink, #fff);
+  font-size: 11px;
+  font-weight: 650;
+}
+.jp-album-place[data-ink="dark"] {color: #000}
+@media (max-width: 520px) {
+  .jp-album {grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px}
+}
+html:has(.jp-viewer[open]) {overflow: hidden; overscroll-behavior: none}
 dialog.jp-viewer {
   position: fixed;
   inset: 0;
@@ -98,7 +125,15 @@ dialog.jp-viewer {
   padding: 10px 16px;
   background: var(--white);
 }
-.jp-view-caption { display: grid; min-width: 0; }
+.jp-view-head {display: grid; grid-template-columns: minmax(0,1fr) auto}
+.jp-view-caption {display: grid; min-width: 0}
+.jp-view-note {
+  min-block-size: 44px;
+  align-content: center;
+  padding: 0;
+  text-align: start;
+}
+.jp-view-note:hover strong {text-decoration: underline; text-underline-offset: .18em}
 .jp-view-caption strong, .jp-view-caption small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .jp-view-caption small { font-size: 12px; color: var(--soft); }
 .jp-viewer .jp-button {
@@ -110,7 +145,7 @@ dialog.jp-viewer {
   font-size: 13px;
   white-space: nowrap;
 }
-.jp-view-footer { justify-content: center; }
+.jp-view-footer {justify-content: center; min-width: 0}
 .jp-view-footer .jp-step { font-size: 23px; line-height: 1; min-width: 42px; }
 .jp-view-footer .jp-position { min-width: 55px; text-align: center; font-variant-numeric: tabular-nums; }
 .jp-view-stage {
@@ -121,6 +156,7 @@ dialog.jp-viewer {
   background: var(--deep-sea);
   min-height: 0;
   min-width: 0;
+  overscroll-behavior: contain;
 }
 .jp-view-image {
   display: block;
@@ -142,14 +178,24 @@ dialog.jp-viewer {
   cursor: zoom-out;
 }
 .jp-view-error { padding: 18px; text-align: center; }
-@media (max-width: 620px) {
+@media (max-width: 620px), (max-height: 500px) and (pointer: coarse) {
   dialog.jp-viewer {
-    width: 100vw; height: 100vh; height: 100dvh;
+    width: 100%; height: 100vh; height: 100dvh;
+    max-width: 100%; max-height: 100dvh;
     border: 0; border-radius: 0;
   }
-  .jp-view-head { padding-top: max(10px, env(safe-area-inset-top)); }
-  .jp-view-footer { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
-  .jp-gallery { grid-template-columns: repeat(auto-fill,minmax(77px,1fr)); gap: 5px; }
+  .jp-view-head, .jp-view-footer {
+    gap: 8px;
+    padding: 5px max(10px, env(safe-area-inset-right)) 5px max(10px, env(safe-area-inset-left));
+  }
+  .jp-view-head {padding-top: max(5px, env(safe-area-inset-top))}
+  .jp-view-footer {padding-bottom: max(5px, env(safe-area-inset-bottom))}
+  .jp-viewer .jp-button {min-width: 44px; min-height: 44px; padding-inline: 8px}
+  .jp-view-footer .jp-position {min-width: 36px; font-size: 12px}
+  .jp-view-stage:not(.jp-actual) {touch-action: pan-y pinch-zoom}
+}
+@media (max-width: 620px) {
+  .jp-gallery {grid-template-columns: repeat(auto-fill,minmax(77px,1fr)); gap: 5px}
 }
 @media (pointer: coarse) {
   .jp-picker, .jp-viewer .jp-button { min-height: 44px; }

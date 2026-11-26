@@ -200,6 +200,135 @@
     return block;
   }
 
+  function thumbnail(key, label, choose) {
+    const tile = button("", label, () => {
+      tile.focus({preventScroll:true});
+      choose();
+    });
+    tile.className = "jp-tile";
+    const image = node("img");
+    image.alt = "";
+    image.loading = "lazy"; image.decoding = "async"; image.src = url(key);
+    tile.append(image);
+    return tile;
+  }
+  const rgbLight = Array.from({length:256},(_,i)=>{
+    const v=i/255;
+    return v<=.04045 ? v/12.92 : ((v+.055)/1.055)**2.4;
+  });
+  const brightnessOf = (r,g,b)=>.2126*rgbLight[r]+.7152*rgbLight[g]+.0722*rgbLight[b];
+  const contrastOf = (a,b)=>(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+  function chooseAlbumColor(crop, local, minCoverage) {
+    const bins=new Map();
+    let visible=0;
+    for (let i=0;i<crop.length;i+=4) {
+      if (crop[i+3]<245) continue;
+      visible++;
+      const [r,g,b]=[crop[i],crop[i+1],crop[i+2]];
+      const high=Math.max(r,g,b), low=Math.min(r,g,b), chroma=high-low;
+      const l=brightnessOf(r,g,b);
+      if (chroma<64 || high<112 || l<.065 || l>.87) continue;
+      const key=(r>>4)*256+(g>>4)*16+(b>>4);
+      let group=bins.get(key);
+      if (!group) bins.set(key,group={count:0});
+      group.count++;
+      const saturation=chroma*(.7+.3*chroma/high);
+      if (saturation>(group.color?.saturation ?? -1)) group.color={r,g,b,l,saturation};
+    }
+    let picked=null;
+    for (const {count,color} of bins.values()) {
+      if (count<Math.max(8, visible*.018)) continue;
+      const {r,g,b,l,saturation}=color;
+      let good=0;
+      for (const pixel of local) {
+        const contrast=contrastOf(l,pixel.l);
+        const delta=(r-pixel.r)**2+(g-pixel.g)**2+(b-pixel.b)**2;
+        if (contrast>=4.5 && delta>=68**2) good++;
+      }
+      if (good/local.length<minCoverage) continue;
+      if (!picked || saturation>picked.saturation || (saturation===picked.saturation && good>picked.good)) {
+        picked={r,g,b,saturation,good};
+      }
+    }
+    return picked && `rgb(${picked.r}, ${picked.g}, ${picked.b})`;
+  }
+  const inkCanvas = document.createElement("canvas");
+  inkCanvas.width=44; inkCanvas.height=14;
+  let nextAlbumSample=0;
+  function setAlbumInk(tile) {
+    const image=tile.querySelector("img"), label=tile.querySelector(".jp-album-place");
+    if (!label || !image.naturalWidth || !image.naturalHeight) return;
+    const frame=image.getBoundingClientRect(), text=label.getBoundingClientRect();
+    if (!frame.width || !frame.height || !text.width || !text.height) return;
+    // Map the exact visible label area through the centered object-fit: cover crop.
+    const scale=Math.max(frame.width/image.naturalWidth,frame.height/image.naturalHeight);
+    const cropX=(image.naturalWidth-frame.width/scale)/2;
+    const cropY=(image.naturalHeight-frame.height/scale)/2;
+    const left=Math.max(0,text.left-frame.left), top=Math.max(0,text.top-frame.top+1);
+    const right=Math.min(frame.width,text.right-frame.left), bottom=Math.min(frame.height,text.bottom-frame.top-1);
+    if (right<=left || bottom<=top) return;
+    try {
+      const ctx=inkCanvas.getContext("2d",{willReadFrequently:true});
+      if (!ctx) return;
+      ctx.clearRect(0,0,44,14);
+      ctx.drawImage(image,cropX+left/scale,cropY+top/scale,(right-left)/scale,(bottom-top)/scale,0,0,44,14);
+      const {data}=ctx.getImageData(0,0,44,14);
+      let dark=0,light=0,brightness=0;
+      const local=[];
+      for (let i=0;i<data.length;i+=4) {
+        if (data[i+3]<245) continue;
+        const [r,g,b]=[data[i],data[i+1],data[i+2]];
+        const l=brightnessOf(r,g,b);
+        if (contrastOf(l,0)>=4.5) dark++;
+        if (contrastOf(l,1)>=4.5) light++;
+        brightness+=l;
+        local.push({r,g,b,l});
+      }
+      if (!local.length) return;
+      const coverage=Math.max(dark,light)/local.length;
+      const darkInk=dark===light ? brightness/local.length>.179 : dark>light;
+      let chosen=null;
+      if (coverage<.9) {
+        ctx.clearRect(0,0,44,14);
+        ctx.imageSmoothingEnabled=false;
+        ctx.drawImage(image,cropX,cropY,frame.width/scale,frame.height/scale,0,0,44,14);
+        chosen=chooseAlbumColor(ctx.getImageData(0,0,44,14).data,local,Math.max(.48,coverage-.10));
+      }
+      label.dataset.ink=chosen ? "color" : darkInk ? "dark" : "light";
+      if (chosen) label.style.setProperty("--album-photo-ink",chosen);
+      else label.style.removeProperty("--album-photo-ink");
+    } catch {
+      label.removeAttribute("data-ink");
+      label.style.removeProperty("--album-photo-ink");
+    } finally {
+      // Reset the canvas origin-clean flag before evaluating the next thumbnail.
+      inkCanvas.width=44;
+    }
+  }
+  function refreshAlbumInk() {
+    cancelAnimationFrame(nextAlbumSample);
+    nextAlbumSample=requestAnimationFrame(()=>{
+      document.querySelectorAll(".jp-album .jp-tile").forEach(setAlbumInk);
+    });
+  }
+  window.addEventListener("resize",refreshAlbumInk,{passive:true});
+  function album(frames,start,end) {
+    const list = node("div","jp-album");
+    for (let index=start;index<end;index++) {
+      const {key,entry}=frames[index];
+      const tile=thumbnail(key,[entry.day,entry.place,entry.event,"照片 "+(index-start+1)].filter(Boolean).join(" · "),
+        ()=>openFrames(frames,index));
+      if (entry.place) {
+        tile.append(node("span","jp-album-place",entry.place));
+        const img=tile.querySelector("img");
+        img.addEventListener("load",()=>setAlbumInk(tile),{once:true});
+        if (img.complete) requestAnimationFrame(()=>setAlbumInk(tile));
+      }
+      list.append(tile);
+    }
+    return list;
+  }
+
   function gallery(entry, { preview = false } = {}) {
     const keys = keysOf(entry);
     const group = node("div", preview ? "jp-gallery entry-photos" : "jp-gallery");
@@ -215,12 +344,7 @@
       group.append(rail);
     }
     keys.forEach((key, index) => {
-      const tile = button("", "放大照片 " + (index + 1) + "，共 " + keys.length + " 张", () => open(entry, index));
-      tile.className = "jp-tile";
-      const image = node("img");
-      image.alt = "照片 " + (index + 1);
-      image.loading = "lazy"; image.decoding = "async"; image.src = url(key);
-      tile.append(image); sequence.append(tile);
+      sequence.append(thumbnail(key, "放大照片 " + (index + 1) + "，共 " + keys.length + " 张", () => open(entry, index)));
     });
     return group;
   }
@@ -257,18 +381,28 @@
   }
 
   function open(entry, initialIndex = 0) {
-    const keys = keysOf(entry);
-    if (!keys.length) return;
+    return openFrames(keysOf(entry).map(key=>({key,entry})),initialIndex);
+  }
+
+  function openFrames(frames, initialIndex = 0) {
+    if (!frames.length) return;
     const previousFocus = document.activeElement;
     const dialog = node("dialog", "jp-viewer");
     dialog.setAttribute("aria-label", "查看照片");
     const header = node("header", "jp-view-head");
+    let index = 0, zoomed = false, jumpToNote = null;
     const caption = node("div","jp-view-caption");
-    const title = node("strong", "", entry.event || "照片");
-    const location = node("small", "", [entry.day, entry.time, entry.place].filter(Boolean).join(" · "));
-    caption.append(title, location);
+    const openNote = button("", "跳转到这张照片的手记", () => {
+      jumpToNote = frames[index].entry.openNote;
+      dialog.close();
+    });
+    openNote.className = "jp-view-caption jp-view-note";
+    const plainTitle = node("strong"), plainPlace = node("small");
+    const linkedTitle = node("strong"), linkedPlace = node("small");
+    caption.append(plainTitle, plainPlace);
+    openNote.append(linkedTitle, linkedPlace);
     const close = button("关闭", "关闭照片", () => dialog.close());
-    header.append(caption, close);
+    header.append(caption, openNote, close);
     const stage = node("div", "jp-view-stage");
     const photo = node("img", "jp-view-image");
     const error = node("span", "jp-view-error", "这张照片未能载入");
@@ -279,7 +413,6 @@
     const next = button("›", "下一张照片", () => show(index + 1));
     const position = node("span", "jp-position");
     position.setAttribute("aria-live", "polite");
-    let index = 0, zoomed = false;
     const zoom = button("实际大小", "切换适应窗口和实际大小", () => setZoom(!zoomed));
     previous.classList.add("jp-step"); next.classList.add("jp-step");
     footer.append(previous, position, next, zoom);
@@ -293,12 +426,22 @@
       stage.scrollTop = 0; stage.scrollLeft = 0;
     }
     function show(wanted) {
-      index = Math.max(0, Math.min(keys.length - 1, Number(wanted) || 0));
-      previous.disabled = index === 0; next.disabled = index === keys.length - 1;
-      position.textContent = (index + 1) + " / " + keys.length;
+      index = Math.max(0, Math.min(frames.length - 1, Number(wanted) || 0));
+      const {key,entry}=frames[index];
+      previous.disabled = index === 0; next.disabled = index === frames.length - 1;
+      position.textContent = (index + 1) + " / " + frames.length;
+      const label = entry.event || "照片";
+      const description = [entry.day,entry.time,entry.place].filter(Boolean).join(" · ");
+      const linked=typeof entry.openNote==="function";
+      plainTitle.textContent=linkedTitle.textContent=label;
+      plainPlace.textContent=linkedPlace.textContent=description;
+      plainPlace.hidden=linkedPlace.hidden=!description;
+      caption.hidden=linked;
+      openNote.hidden=!linked;
+      openNote.setAttribute("aria-label","查看手记："+label);
       error.hidden = true; photo.hidden = false;
-      photo.alt = [entry.event || "照片", "第 " + (index + 1) + " 张"].join(" · ");
-      photo.src = url(keys[index]);
+      photo.alt = label + " · 第 " + (index + 1) + " 张";
+      photo.src = url(key);
       setZoom(false);
     }
     photo.onerror = () => { photo.hidden = true; error.hidden = false; };
@@ -322,7 +465,8 @@
     stage.addEventListener("touchcancel", () => { touchStart = null; }, { passive: true });
     dialog.addEventListener("close", () => {
       dialog.remove();
-      if (previousFocus?.isConnected) previousFocus.focus();
+      if (jumpToNote) jumpToNote();
+      else if (previousFocus?.isConnected) previousFocus.focus({preventScroll:true});
     }, { once: true });
     document.body.append(dialog);
     dialog.showModal();
@@ -330,5 +474,5 @@
     close.focus();
   }
 
-  window.JournalPhotos = { editor, gallery, fitNotePreview, prepare, url, open, encodePhoto };
+  window.JournalPhotos = { editor, gallery, album, fitNotePreview, prepare, url, open, encodePhoto };
 })();
