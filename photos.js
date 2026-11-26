@@ -204,15 +204,56 @@
     const keys = keysOf(entry);
     const group = node("div", preview ? "jp-gallery entry-photos" : "jp-gallery");
     group.hidden = !keys.length;
-    (preview ? keys.slice(0, 1) : keys).forEach((key, index) => {
+    let sequence = group;
+    if (preview && keys.length > 1) {
+      group.classList.add("entry-photos-multi");
+      const rail = node("div", "entry-photos-rail");
+      const viewport = node("div", "entry-photos-window");
+      sequence = node("div", "entry-photos-sequence");
+      viewport.append(sequence);
+      rail.append(viewport);
+      group.append(rail);
+    }
+    keys.forEach((key, index) => {
       const tile = button("", "放大照片 " + (index + 1) + "，共 " + keys.length + " 张", () => open(entry, index));
       tile.className = "jp-tile";
       const image = node("img");
       image.alt = "照片 " + (index + 1);
       image.loading = "lazy"; image.decoding = "async"; image.src = url(key);
-      tile.append(image); group.append(tile);
+      tile.append(image); sequence.append(tile);
     });
     return group;
+  }
+
+  function fitNotePreview(group) {
+    if (!group.classList.contains("entry-photos-multi")) return () => {};
+    const narrow = matchMedia("(max-width: 520px)");
+    const rail = group.querySelector(".entry-photos-rail");
+    const sequence = group.querySelector(".entry-photos-sequence");
+    const tiles = [...sequence.children];
+    function update() {
+      if (!group.clientWidth) return;
+      if (narrow.matches) {
+        group.removeAttribute("data-folded");
+        tiles.forEach(tile => {tile.inert = false;});
+        return;
+      }
+      const limit = rail.clientHeight;
+      if (!limit) return;
+      const clipped = sequence.scrollHeight > limit + 1;
+      group.toggleAttribute("data-folded", clipped);
+      tiles.forEach(tile => {tile.inert = clipped && tile.offsetTop >= limit;});
+    }
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(update) : null;
+    observer?.observe(group);
+    if (!observer) window.addEventListener("resize", update);
+    narrow.addEventListener?.("change", update);
+    update();
+    return () => {
+      observer?.disconnect();
+      if (!observer) window.removeEventListener("resize", update);
+      narrow.removeEventListener?.("change", update);
+    };
   }
 
   function open(entry, initialIndex = 0) {
@@ -289,5 +330,5 @@
     close.focus();
   }
 
-  window.JournalPhotos = { editor, gallery, prepare, url, open, encodePhoto };
+  window.JournalPhotos = { editor, gallery, fitNotePreview, prepare, url, open, encodePhoto };
 })();

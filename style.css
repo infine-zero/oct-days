@@ -203,6 +203,20 @@ h1 {font-size: clamp(30px, 5vw, 40px); font-weight: 750; margin: 0 0 8px; text-w
 .chapter {min-width: 0}
 .chapter h2, .chapter select {font-size: 15px; font-weight: 600}
 .chapter select {border: 0; border-radius: 0; background: #fff; max-width: 100%; padding: 4px 1.4em 4px 0}
+#days {
+  -webkit-appearance: none;
+  appearance: none;
+  min-inline-size: 80px;
+  block-size: 30px;
+  color: var(--accent);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+  text-decoration: none;
+}
+#days option {background-color: transparent}
+#days:focus-visible {color: var(--ink); font-weight: 800}
 .modes {background: none; gap: 16px; padding: 0; flex-wrap: nowrap; flex-shrink: 0}
 .mode {padding: 5px 0}
 .mode.active {text-decoration: underline; text-underline-offset: .4em}
@@ -300,6 +314,34 @@ h1 {font-size: clamp(30px, 5vw, 40px); font-weight: 750; margin: 0 0 8px; text-w
   margin: 0;
 }
 .entry-photos > .jp-tile {display: block}
+.event > .entry-photos-multi {
+  position: relative;
+  align-self: stretch;
+  min-block-size: 0;
+}
+.entry-photos-rail {
+  position: absolute;
+  /* Align with the visible title lettering, not the line box's extra leading. */
+  inset: clamp(5px, .75vw, 6px) 0 0;
+}
+.entry-photos-window {block-size: 100%; overflow: hidden; overflow: clip}
+.entry-photos-sequence {position: relative; display: grid; gap: 8px}
+.entry-photos-sequence > .jp-tile:focus-visible {outline-offset: -4px}
+.entry-photos-multi[data-folded] .entry-photos-window {
+  mask-image: linear-gradient(#000 calc(100% - 36px), transparent);
+}
+@media (max-width: 520px) {
+  .event:has(> .entry-photos-multi:not([hidden])) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+  }
+  .event:has(> .entry-photos-multi:not([hidden])) > .chapter-background {inset-inline-end: 0}
+  .event > .entry-photos-multi {grid-area: 3 / 1 / 4 / 3; margin-block-start: 8px}
+  .entry-photos-multi .entry-photos-rail {position: static; block-size: auto}
+  .entry-photos-multi .entry-photos-window {block-size: auto; overflow: visible; mask-image: none}
+  .entry-photos-multi .entry-photos-sequence {grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px}
+}
+
 .quiet, .quiet:hover {border: 0; background: none; padding: 3px 0}
 .group {border: 0; border-radius: 0; padding: 0 0 14px}
 .group h2 {font-size: 16px; margin-bottom: 8px}

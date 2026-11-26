@@ -255,7 +255,10 @@ function render() {
   });
   paintList(records);
 }
+let releaseNotePhotos = null;
 function paintList(records) {
+  releaseNotePhotos?.();
+  releaseNotePhotos = null;
   const list = byId("event-list");
   list.replaceChildren();
   if (!records.length) {
@@ -265,6 +268,7 @@ function paintList(records) {
   }
   for (const entry of records) {
     const active = entry.id===state.selected;
+    let photoPreview;
     const row = make("article","event"+(active?" is-selected":""));
     if (entry === records[0] && state.day !== initialNote) {
       const date = make("span", "chapter-background", dayLabel(state.day));
@@ -297,10 +301,12 @@ function paintList(records) {
       }
       if (detail.childElementCount) row.append(detail);
       if (entry.photos?.length) {
-        row.append(window.JournalPhotos.gallery(readerEntry(entry), {preview:true}));
+        photoPreview = window.JournalPhotos.gallery(readerEntry(entry), {preview:true});
+        row.append(photoPreview);
       }
     }
     list.append(row);
+    if (photoPreview) releaseNotePhotos = window.JournalPhotos.fitNotePreview(photoPreview);
   }
 }
 function paintAlbum(groups) {
