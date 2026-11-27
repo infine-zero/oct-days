@@ -349,14 +349,8 @@ function paintList(records) {
         photoPreview = window.JournalPhotos.gallery(readerEntry(entry), {preview:true});
       }
       const interactions = window.NoteInteractions?.create(entry.id);
-      if (interactions && photoPreview && !photoPreview.hidden) {
-        const aside = make("div", "note-aside");
-        aside.append(photoPreview, interactions);
-        row.append(aside);
-      } else {
-        if (photoPreview) row.append(photoPreview);
-        if (interactions) row.append(interactions);
-      }
+      if (photoPreview) row.append(photoPreview);
+      if (interactions) row.append(interactions);
     }
     list.append(row);
     if (photoPreview) releaseNotePhotos = window.JournalPhotos.fitNotePreview(photoPreview);
