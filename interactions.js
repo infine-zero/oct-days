@@ -253,8 +253,15 @@
   }
 
   function bindToggle(toggle) {
+    if (!toggle) return;
+    const dialog = toggle.closest("dialog");
+    const settings = document.getElementById("reader-settings-open");
+    if (dialog && settings) {
+      settings.hidden = false;
+      settings.addEventListener("click", () => dialog.showModal());
+    }
     toggle.hidden = false;
-    toggle.setAttribute("aria-label", "顯示互動與留言");
+    toggle.setAttribute("aria-label", "显示留言和表情");
     toggle.setAttribute("aria-pressed", String(enabled));
     toggle.addEventListener("click", () => {
       enabled = !enabled;
