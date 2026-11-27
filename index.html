@@ -16,12 +16,14 @@
   <link rel="stylesheet" href="./style.css?v=author-right-edge">
   <link rel="stylesheet" href="./journey.css?v=film-photo-direct">
   <link rel="stylesheet" href="./photos.css?v=album-edge-type">
+  <link rel="stylesheet" href="./interactions.css?v=6385b12ac0">
   <script id="public-journal-snapshot" data-pages-origin="https://infine-zero.github.io" data-repository-url="https://api.github.com/repos/infine-zero/oct-days/contents/share-data.js?ref=main" src="./share-data.js?v=clean-titles"></script>
 
 
   <script defer src="./photos.js?v=album-edge-type"></script>
   <script defer src="./journey.js?v=film-photo-direct"></script>
-  <script defer src="./app.js?v=album-viewer"></script>
+  <script defer src="./interactions.js?v=2ae6bc291f" data-api="https://api.kiwi.jp.net/api/interactions"></script>
+  <script defer src="./app.js?v=1d51d607dc"></script>
 </head>
 <body>
   <header class="bar"><div class="bar-inner">
@@ -41,6 +43,7 @@
         <span class="nav-icon-name" aria-hidden="true">相册</span>
       </button>
     </nav>
+    <button id="interactions-toggle" class="interaction-toggle" type="button" aria-pressed="true" hidden>互動</button>
     <button id="theme-toggle" class="theme-toggle" type="button" aria-label="切换到日间主题" title="切换到日间主题">
       <svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <path d="M11 1h2v4h-2zm0 18h2v4h-2zM1 11h4v2H1zm18 0h4v2h-4zM3.51 4.93l1.42-1.42 2.83 2.83-1.42 1.42zm12.73 12.73 1.42-1.42 2.83 2.83-1.42 1.42zM3.51 19.07l2.83-2.83 1.42 1.42-2.83 2.83zM16.24 6.34l2.83-2.83 1.42 1.42-2.83 2.83zM12 6.75a5.25 5.25 0 1 1 0 10.5 5.25 5.25 0 0 1 0-10.5Z"/>

@@ -301,6 +301,7 @@ function render() {
 }
 let releaseNotePhotos = null;
 function paintList(records) {
+  window.NoteInteractions?.unmount();
   releaseNotePhotos?.();
   releaseNotePhotos = null;
   const list = byId("event-list");
@@ -346,7 +347,15 @@ function paintList(records) {
       if (detail.childElementCount) row.append(detail);
       if (entry.photos?.length) {
         photoPreview = window.JournalPhotos.gallery(readerEntry(entry), {preview:true});
-        row.append(photoPreview);
+      }
+      const interactions = window.NoteInteractions?.create(entry.id);
+      if (interactions && photoPreview && !photoPreview.hidden) {
+        const aside = make("div", "note-aside");
+        aside.append(photoPreview, interactions);
+        row.append(aside);
+      } else {
+        if (photoPreview) row.append(photoPreview);
+        if (interactions) row.append(interactions);
       }
     }
     list.append(row);
@@ -709,6 +718,7 @@ async function saveDrafts() {
   }
 }
 function startUI() {
+  window.NoteInteractions?.bindToggle(byId("interactions-toggle"));
   const themeToggle = byId("theme-toggle");
   if (themeToggle) {
     const root = document.documentElement;
