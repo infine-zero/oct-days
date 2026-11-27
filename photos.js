@@ -25,6 +25,8 @@
   }
 
   function url(key) {
+    const live = typeof key === "string" && key.match(/^postbox:([0-9a-f]{32}):([0-9]|1[0-9])$/);
+    if (live && window.TRAVEL_SHARE) return "https://submit.kiwi.jp.net/v1/public-media/"+live[1]+"/"+live[2];
     if (typeof key !== "string" || !keyPattern.test(key)) return "";
     if (window.TRAVEL_SHARE) return "./media/" + key;
     if (window.JOURNAL_DEMO_KEYS?.has(key)) return "./sample-media/" + key;

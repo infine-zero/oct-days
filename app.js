@@ -887,6 +887,44 @@ async function loadPublicSnapshot({pages, repository}, fallback) {
   const data = [previous, fallback].find(isPublicSnapshot);
   return {data:data || {version:1, tripStart:"", events:[]}, fresh:false, hasSnapshot:!!data};
 }
+const publicPostbox = "https://submit.kiwi.jp.net";
+function directPublicEvent(post) {
+  if (!post || typeof post.id !== "string" || !/^[a-f0-9]{32}$/.test(post.id) ||
+      !["title","text","date","place","author"].every(key => typeof post[key] === "string") ||
+      !Array.isArray(post.photos) || post.photos.length > 20) return null;
+  const photos = [];
+  for (let i=0; i<post.photos.length; i++) {
+    const path = "/v1/public-media/"+post.id+"/"+i;
+    if (![path, publicPostbox+path].includes(post.photos[i]?.url)) return null;
+    photos.push("postbox:"+post.id+":"+i);
+  }
+  const stamp = typeof post.publishedAt === "number" ? post.publishedAt * (post.publishedAt<1e12 ? 1000 : 1) : Date.parse(post.publishedAt);
+  if (!Number.isFinite(stamp) || !Number.isFinite(new Date(stamp).valueOf())) return null;
+  return {id:post.id,day:post.date,time:"",place:post.place,event:post.title,reflection:post.text,
+    author:post.author,people:[],photos,status:"confirmed",publishedAt:new Date(stamp).toISOString()};
+}
+async function mergeLivePosts() {
+  if (!shared || !publicDataSources() || document.hidden || document.querySelector("dialog[open]")) return;
+  try {
+    const response = await fetch(publicPostbox+"/v1/public-posts",{
+      cache:"no-store", credentials:"omit", redirect:"error", signal:AbortSignal.timeout(4500)
+    });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!Array.isArray(data.posts)) return;
+    const ids = new Set(shared.events.map(event=>event.id));
+    const live = [];
+    for (const post of data.posts) {
+      const event = directPublicEvent(post);
+      if (!event || ids.has(event.id)) continue;
+      ids.add(event.id);
+      live.push(event);
+    }
+    if (document.querySelector("dialog[open]")) return;
+    const events=[...shared.events,...live];
+    if (JSON.stringify(events)!==JSON.stringify(state.events)) syncJournal({...shared,events});
+  } catch { /* Existing trip notes remain available when the live feed is offline. */ }
+}
 async function init() {
   try {
     const sources = publicDataSources();
@@ -896,6 +934,7 @@ async function init() {
       applyData(shared);
       state.demo=!!shared.demo;
       startUI();restoreView(history.state?.[viewStateKey]);
+      if (sources) { void mergeLivePosts(); window.addEventListener("focus", mergeLivePosts); }
       if (update && !update.fresh) notice(update.hasSnapshot
         ? "暂时无法检查最新手记，正在显示已有内容。"
         : "暂时无法加载手记，请联网后刷新。");
