@@ -840,7 +840,7 @@ function syncJournal(data) {
 }
 function publicDataSources() {
   const snapshot = byId("public-journal-snapshot");
-  if (!snapshot || location.origin !== snapshot.dataset.pagesOrigin) return null;
+  if (!snapshot || ![snapshot.dataset.pagesOrigin, snapshot.dataset.customPagesOrigin].includes(location.origin)) return null;
   const url = new URL(snapshot.src);
   const directory = new URL(".", url).pathname;
   if (url.origin !== location.origin || ![directory, directory+"index.html"].includes(location.pathname)) return null;
